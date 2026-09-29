@@ -1,0 +1,88 @@
+/* Fondo espacial, tipografía sans-serif, diseño 100% adaptable */
+:root { --fondo:#07090f; --texto:#e8ecf4; --tenue:#8b95ab; --acento:#7fd6c2; }
+* { box-sizing: border-box; }
+
+html, body { 
+  margin: 0; 
+  padding: 0; 
+  width: 100%; 
+  min-height: 100vh; 
+  background: var(--fondo); 
+  color: var(--texto);
+  font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif; 
+  line-height: 1.5; 
+  overflow-x: hidden; 
+  display: flex; 
+  flex-direction: column; 
+}
+
+header { 
+  padding: 1rem 1rem 0.25rem; 
+  width: 100%; 
+  max-width: 1200px; 
+  margin: 0 auto; 
+  text-align: center; 
+}
+
+h1 { 
+  font-size: clamp(1.3rem, 3.2vw, 2.2rem); 
+  line-height: 1.15; 
+  margin: 0 0 .3rem; 
+}
+
+header p { 
+  color: var(--tenue); 
+  margin: 0; 
+  font-size: clamp(0.85rem, 1.8vw, 1rem); 
+}
+
+#controles { 
+  display: flex; 
+  flex-wrap: wrap; 
+  gap: 1rem; 
+  align-items: center; 
+  justify-content: center;
+  width: 100%; 
+  max-width: 1200px; 
+  margin: 0 auto; 
+  padding: 0.5rem 1rem; 
+}
+
+label { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+input[type=range] { accent-color: var(--acento); width: 160px; cursor: pointer; }
+
+button { 
+  background: transparent; 
+  color: var(--texto); 
+  border: 1px solid var(--tenue);
+  border-radius: 6px; 
+  padding: .4rem .8rem; 
+  font: inherit; 
+  cursor: pointer; 
+  transition: background 0.2s ease, border-color 0.2s ease; 
+}
+
+button:hover, button:focus-visible { border-color: var(--acento); outline: 2px solid var(--acento); outline-offset: 2px; }
+button.on { background: var(--acento); color: #07090f; border-color: var(--acento); }
+
+#lienzo { 
+  width: 100%; 
+  flex: 1; 
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+  overflow: hidden; 
+  padding: 0; 
+}
+
+#lienzo canvas { 
+  display: block; 
+}
+
+footer { 
+  text-align: center; 
+  color: var(--tenue); 
+  font-size: .8rem; 
+  padding: .5rem 1rem; 
+  margin-top: auto; 
+}

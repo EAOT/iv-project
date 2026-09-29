@@ -1,21 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Template</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>La gravedad no es un número</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- p5.js por CDN (funciona en file:// y en GitHub Pages) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
 </head>
 <body>
-    <header>
-        <h1>Template</h1>
-    </header>
+  <header>
+    <h1>¿Cómo se vería tu salto a través del sistema solar?</h1>
+    <p>Un mismo salto humano, 11 cuerpos distintos. Recorre el sistema solar y haz clic en uno para acercarte y saltar en él.</p>
+  </header>
 
-    <main>
-        <h2>Welcome</h2>
-        <p>This is a basic HTML template.</p>
-        
-    </main>
+  <section id="controles">
+    <label>Velocidad inicial v₀: <output id="v0-out">3.0</output> m/s
+      <input id="v0" type="range" min="1" max="5" step="0.1" value="3">
+    </label>
+    <button id="btn-sonido" type="button">🔇 Sonido apagado (pulsa para activar)</button>
+    <button id="btn-volver" type="button" hidden>← Volver a la vista general</button>
+  </section>
 
-    
+  <main id="lienzo"></main>
+  <footer>Datos: NASA Planetary Fact Sheet. Alturas: h = v₀² / 2g. Tiempo en el aire: t = 2v₀ / g.</footer>
+
+  <script src="sketch.js"></script>
 </body>
 </html>
