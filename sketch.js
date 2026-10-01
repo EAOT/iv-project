@@ -256,7 +256,18 @@ let detalleFaseAnt = 1;
 
 /* =========================== SONIFICACIÓN ============================ */
 let ctx = null, sonidoOn = false, fuente = null;
-const frecuenciaBase = g => 80 * Math.pow(880 / 80, (Math.log(G_MAX) - Math.log(g)) / (Math.log(G_MAX) - Math.log(G_MIN)));
+
+const F_MIN = 180;
+const F_MAX = 1200;
+
+const frecuenciaBase = g =>
+  F_MIN * Math.pow(
+    F_MAX / F_MIN,
+    (Math.log(G_MAX) - Math.log(g)) /
+    (Math.log(G_MAX) - Math.log(G_MIN))
+  );
+
+
 function detener() { if (fuente) { try { fuente.stop(); } catch (e) {} fuente = null; } }
 
 function reproducir(c) {
