@@ -35,7 +35,7 @@ const CUERPOS = [
 const G_MIN = 0.0001, G_MAX = 24.79, DUR_MAX = 12; 
 let v0 = 3.0; 
 let tOrbita = 0; 
-let faseSaltoDetalle = 0; // Acumulador continuo para la animación del salto
+let faseSaltoDetalle = 0;
 
 const altura = c => v0 * v0 / (2 * c.g);
 const tiempo = c => 2 * v0 / c.g;
@@ -53,6 +53,7 @@ function comparar(h) {
 /* ============================ ESTADO ================================= */
 let sel = null, imgs = {};
 let z = 0, zObj = 0;   
+let mVal = 1, mObj = 1;  // 0 = en línea · 1 = órbitas en movimiento
 const ZOOM_MAX = 40;
 const suave = (a, b, x) => { const t = constrain((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 
@@ -73,7 +74,6 @@ function windowResized() { ajustar(); }
 function ajustar() {
   const contenedor = document.getElementById('lienzo');
   const w = contenedor.clientWidth;
-  // Calcula el alto disponible dinámicamente según la pantalla
   const hHeader = document.querySelector('header').offsetHeight;
   const hControles = document.getElementById('controles').offsetHeight;
   const hFooter = document.querySelector('footer').offsetHeight;
@@ -92,12 +92,12 @@ function draw() {
   z = constrain(z + (zObj ? 1 : -1) * dt, 0, 1);
   if ((antes < 1 && z === 1) || (antes > 0 && z === 0)) ajustar();
   
-  if (z === 0 && zObj === 0) {
-    tOrbita += dt;
-    sel = null; 
+  if (z === 0) {
+    tOrbita += dt * mVal;
+    mVal += constrain(mObj - mVal, -dt * 1.5, dt * 1.5);
+    if (zObj === 0) sel = null; 
   }
 
-  // Avanza la fase de salto del detalle suavemente proporcional al tiempo de salto actual
   if (sel) {
     const tAnim = min(tiempo(sel), DUR_MAX);
     faseSaltoDetalle += dt / (tAnim + 0.6);
@@ -117,10 +117,22 @@ function estrellas() {
 /* ======================= VISTA GENERAL: SISTEMA ====================== */
 function posiciones() {
   const cx = width / 2, cy = height / 2;
-  const maxRx = min(width / 2 - 40, 550); // Mantiene las órbitas dentro del ancho visible
+  const y0 = height * 0.6; // Altura de la línea base
+  const maxRx = min(width / 2 - 40, 550); 
+  const n = CUERPOS.length;
+  
+  // Posiciones en línea recta logarítmica
+  const m0 = width < 600 ? 70 : 110, ancho = width - m0 - 40, gap = min(78, ancho / n), xs = [];
+  CUERPOS.forEach((c, i) => { 
+    const p = m0 + (Math.log10(c.au) + 0.45) / 2.1 * ancho; 
+    xs.push(i ? max(p, xs[i - 1] + gap) : p); 
+  });
+  const k = min(1, ancho / (xs[n - 1] - m0));
+
   const pos = [];
   
   CUERPOS.forEach((c, i) => {
+    // Posiciones orbitales
     const logAu = Math.log10(c.au);
     const rx = map(logAu, -0.45, 1.6, min(width * 0.08, 50), maxRx);
     const ry = rx * 0.42; 
@@ -128,17 +140,25 @@ function posiciones() {
     const periodo = Math.pow(c.au, 1.5);
     const ang = (tOrbita * 0.4 / periodo) + (i * 2.3); 
     
-    let x = cx + rx * Math.cos(ang);
-    let y = cy + ry * Math.sin(ang);
+    let ox = cx + rx * Math.cos(ang);
+    let oy = cy + ry * Math.sin(ang);
     
     if (c.nombre === 'Luna') {
       const pTierra = pos.find(p => p.nombre === 'Tierra');
       if (pTierra) {
-        x = pTierra.x + 16 * Math.cos(tOrbita * 4);
-        y = pTierra.y + 16 * Math.sin(tOrbita * 4);
+        ox = pTierra.ox + 16 * Math.cos(tOrbita * 4);
+        oy = pTierra.oy + 16 * Math.sin(tOrbita * 4);
       }
     }
-    pos.push({ x, y, rx, ry, nombre: c.nombre });
+    
+    // Interpolar según mVal
+    const lx = m0 + (xs[i] - m0) * k;
+    pos.push({ 
+      x: lerp(lx, ox, mVal), 
+      y: lerp(y0, oy, mVal), 
+      rx, ry, ox, oy, lx, 
+      nombre: c.nombre 
+    });
   });
   return pos;
 }
@@ -153,7 +173,7 @@ function cuerpoEn(mx, my, posArr) {
 }
 
 function dibujarSistema(e) {
-  const pos = posiciones(), cx = width / 2, cy = height / 2;
+  const pos = posiciones(), cx = width / 2, cy = height / 2, y0 = height * 0.6;
   const hover = (z === 0 && zObj === 0) ? cuerpoEn(mouseX, mouseY, pos) : -1;
   push();
   drawingContext.globalAlpha = 1 - suave(0.6, 1, e);
@@ -168,15 +188,22 @@ function dibujarSistema(e) {
     }
   }
   
-  // Sol en el centro
-  noStroke(); fill(255, 170, 60, 30); circle(cx, cy, 70); fill(255, 190, 80, 70); circle(cx, cy, 50); fill('#ffb347'); circle(cx, cy, 36);
+  const sr = 35;
+  const solX = lerp(max(sr + 8, (width < 600 ? 70 : 110) - 70), cx, mVal);
+  const solY = lerp(y0, cy, mVal);
+
+  // Línea base modo alineado
+  stroke(255, 45 * (1 - mVal)); strokeWeight(1); line(solX + sr, y0, width - 20, y0);
+
+  // Sol
+  noStroke(); fill(255, 170, 60, 30); circle(solX, solY, 70); fill(255, 190, 80, 70); circle(solX, solY, 50); fill('#ffb347'); circle(solX, solY, 36);
   
-  // Rutas orbitales
-  noFill(); stroke(255, 20); strokeWeight(1);
+  // Rutas orbitales (desvanecen al alinear)
+  noFill(); stroke(255, 20 * mVal); strokeWeight(1);
   pos.forEach(p => { if (p.nombre !== 'Luna') ellipse(cx, cy, p.rx * 2, p.ry * 2); });
   
   noStroke(); fill(120); textAlign(CENTER); textSize(11); textStyle(NORMAL);
-  // text('Sistema planetario en movimiento orbital continuo · Distancias al Sol en escala logarítmica', cx, height - 12);
+  text((mVal > 0.5 ? 'Sistema planetario en movimiento orbital continuo' : 'Planetas alineados por distancia al Sol') + ' · Escala logarítmica', cx, height - 12);
 
   // Cuerpos celestes
   CUERPOS.forEach((c, i) => {
@@ -192,13 +219,21 @@ function dibujarSistema(e) {
     noStroke(); fill(c.col); circle(x, y, 2 * r);
     if (imgs[c.nombre]) image(imgs[c.nombre], x - r, y - r, 2 * r, 2 * r); else { fill(255, 45); circle(x - r * 0.3, y - r * 0.3, r * 0.8); }
     
-    const alt = 130 * escalaLog(altura(c)), ph = ((millis() / 1000) / 2.2 + i * 0.17) % 1, hSuelo = 4 * ph * (1 - ph) * alt;
+    const altMax = lerp(min(130, y0 - 90), 130, mVal);
+    const alt = altMax * escalaLog(altura(c)), ph = ((millis() / 1000) / 2.2 + i * 0.17) % 1, hSuelo = 4 * ph * (1 - ph) * alt;
     stroke(c.col); strokeWeight(1); drawingContext.setLineDash([3, 4]); line(x - 12, y - r - alt - 18, x + 12, y - r - alt - 18); drawingContext.setLineDash([]);
     astronauta(x, y - r - hSuelo + 10, 0.4, ph > 0.05 && ph < 0.95, c.col);
     
     if (z < 0.5) { 
-      noStroke(); textAlign(CENTER); fill(sobre ? c.col : 255); textSize(11); textStyle(BOLD); text(c.nombre, x, y + r + 14);
-      textStyle(NORMAL); textSize(9.5); fill(c.col); text(fmtM(altura(c)), x, y + r + 24);
+      const fila = i % 2;
+      const ly = y0 + 34 + fila * 72;
+      const finalY = lerp(ly, y + r + 24, mVal);
+
+      if (fila && mVal < 0.5) { stroke(255, 30 * (1 - 2 * mVal)); line(x, y + r + 4, x, ly - 15); }
+
+      noStroke(); textAlign(CENTER); fill(sobre ? c.col : 255); textSize(11); textStyle(BOLD); 
+      if (!(c.nombre === 'Luna' && mVal > 0.5 && !sobre)) text(c.nombre, x, finalY - 10);
+      textStyle(NORMAL); textSize(9.5); fill(c.col); text(fmtM(altura(c)), x, finalY);
     }
   });
   pop();
@@ -256,7 +291,6 @@ let detalleFaseAnt = 1;
 
 /* =========================== SONIFICACIÓN ============================ */
 let ctx = null, sonidoOn = false, fuente = null;
-
 const F_MIN = 180;
 const F_MAX = 1200;
 
@@ -266,8 +300,7 @@ const frecuenciaBase = g =>
     (Math.log(G_MAX) - Math.log(g)) /
     (Math.log(G_MAX) - Math.log(G_MIN))
   );
-
-
+  
 function detener() { if (fuente) { try { fuente.stop(); } catch (e) {} fuente = null; } }
 
 function reproducir(c) {
@@ -304,13 +337,15 @@ function mousePressed() {
   sel = CUERPOS[i]; 
   zObj = 1; 
   detalleFaseAnt = 1; 
-  faseSaltoDetalle = 0; // Inicia la fase desde el suelo al seleccionar un cuerpo  
+  faseSaltoDetalle = 0;   
   document.getElementById('btn-volver').hidden = false;
   reproducir(sel);
 }
 
 function iniciarUI() {
-  const sl = document.getElementById('v0'), out = document.getElementById('v0-out'), bs = document.getElementById('btn-sonido');
+  const sl = document.getElementById('v0'), out = document.getElementById('v0-out');
+  const bs = document.getElementById('btn-sonido'), bm = document.getElementById('btn-modo'); // Agregado botón de modo
+  
   sl.addEventListener('input', () => { 
     v0 = parseFloat(sl.value); 
     out.textContent = v0.toFixed(1); 
@@ -323,6 +358,15 @@ function iniciarUI() {
     bs.classList.toggle('on', sonidoOn);
     bs.textContent = sonidoOn ? '🔊 Sonido activo (pulsa para detener)' : '🔇 Sonido apagado (pulsa para activar)';
   });
+
+  // Listener para el botón que intercambia las vistas
+  if (bm) {
+    bm.addEventListener('click', () => { 
+      if (z !== 0) return;
+      mObj = mObj ? 0 : 1;
+      bm.textContent = mObj ? '🪐 Vista: órbitas (pulsa para alinear)' : '➖ Vista: en línea (pulsa para orbitar)';
+    });
+  }
   
   document.getElementById('btn-volver').addEventListener('click', () => { 
     zObj = 0; 
