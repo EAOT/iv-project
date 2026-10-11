@@ -221,7 +221,7 @@ function dibujarSistema(e) {
     
     const altMax = lerp(min(130, y0 - 90), 130, mVal);
     const alt = altMax * escalaLog(altura(c)), ph = ((millis() / 1000) / 2.2 + i * 0.17) % 1, hSuelo = 4 * ph * (1 - ph) * alt;
-    stroke(c.col); strokeWeight(1); drawingContext.setLineDash([3, 4]); line(x - 12, y - r - alt - 18, x + 12, y - r - alt - 18); drawingContext.setLineDash([]);
+    stroke(c.col); strokeWeight(1); drawingContext.setLineDash([3, 4]); line(x - 12, y - r - alt + 10, x + 12, y - r - alt + 10); drawingContext.setLineDash([]);
     astronauta(x, y - r - hSuelo + 10, 0.4, ph > 0.05 && ph < 0.95, c.col);
     
     if (z < 0.5) { 
@@ -273,8 +273,8 @@ function dibujarDetalle() {
   
   noStroke(); fill(c.col); imgs[c.nombre] ? image(imgs[c.nombre], width / 2 - 40, suelo, 80, 80) : rect(0, suelo, width, 12);
   const cx = width * 0.35;
-  stroke(c.col); strokeWeight(1); drawingContext.setLineDash([4, 6]); line(cx - 90, suelo - hPx - 62, cx + 90, suelo - hPx - 62); drawingContext.setLineDash([]);
-  noStroke(); fill(c.col); textAlign(LEFT); textSize(12); text(fmtM(h) + (acotado ? ' (fuera de escala)' : ''), cx + 96, suelo - hPx - 58);
+  stroke(c.col); strokeWeight(1); drawingContext.setLineDash([4, 6]); line(cx - 90, suelo - hPx, cx + 90, suelo - hPx); drawingContext.setLineDash([]);
+  noStroke(); fill(c.col); textAlign(LEFT); textSize(12); text(fmtM(h) + (acotado ? ' (fuera de escala)' : ''), cx + 96, suelo - hPx);
   astronauta(cx, suelo - y, 1, ph < 1 && ph > 0.03, c.col);
   
   const px = width < 640 ? 16 : width * 0.55, py = 25;
