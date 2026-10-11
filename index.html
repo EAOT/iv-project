@@ -20,8 +20,28 @@
     </label>
     <button id="btn-sonido" type="button">🔇 Sonido apagado (pulsa para activar)</button>
     <button id="btn-modo">🪐 Vista: órbitas (pulsa para alinear)</button>
+    <button id="btn-descubre" type="button">✨ Descubre la gravedad</button>
     <button id="btn-volver" type="button" hidden>← Volver a la vista general</button>
   </section>
+
+  <section id="descubre-panel" hidden aria-live="polite">
+  <h2 id="descubre-titulo">Descubre la gravedad</h2>
+  <p id="descubre-texto"></p>
+
+  <div class="descubre-acciones">
+    <button id="descubre-repetir" type="button">
+      ↻ Repetir salto
+    </button>
+
+    <button id="descubre-continuar" type="button">
+      Continuar
+    </button>
+
+    <button id="descubre-salir" type="button">
+      ← Volver al simulador
+    </button>
+  </div>
+</section>
 
   <main id="lienzo"></main>
   <footer>Datos: NASA Planetary Fact Sheet. Alturas: h = v₀² / 2g. Tiempo en el aire: t = 2v₀ / g.</footer>
