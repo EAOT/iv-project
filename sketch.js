@@ -374,7 +374,7 @@ const solY = lerp(y0, cy, mVal);
       const finalY = lerp(ly, yOrbital, mVal);
 
       // Conector desde el planeta hasta su etiqueta
-      if (fila && mVal < 0.5) {
+      if (mVal < 0.5) {
         stroke(255, 30 * (1 - 2 * mVal));
         line(x, y + r + 4, x, ly - 15);
       }
@@ -382,7 +382,7 @@ const solY = lerp(y0, cy, mVal);
       noStroke();
       textAlign(CENTER);
       fill(sobre ? c.col : 255);
-      textSize(11);
+      textSize(12);
       textStyle(BOLD);
 
       if (!(c.nombre === 'Luna' && mVal > 0.5 && !sobre)) {
@@ -390,7 +390,7 @@ const solY = lerp(y0, cy, mVal);
       }
 
       textStyle(NORMAL);
-      textSize(9.5);
+      textSize(10);
       fill(c.col);
       text(fmtM(altura(c)), x, finalY);
     }
