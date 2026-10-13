@@ -71,6 +71,7 @@ const ESCALA_PLANETAS_ORBITA = 1.05;//1.0;
 
 const ESCALA_ASTRONAUTA_LINEA = 1;//0.6;
 const ESCALA_ASTRONAUTA_ORBITA = 0.4;
+const ESCALA_ASTRONAUTA_VISTA_PARTICULAR = 1.8;//1;
 
 const DISTANCIA_LABEL_LINEA = 86;
 const DISTANCIA_LABEL_ORBITA = 24;
@@ -488,7 +489,7 @@ function dibujarDetalle() {
   stroke(c.col); strokeWeight(1); drawingContext.setLineDash([4, 6]); line(cx - 90, suelo - hPx, cx + 90, suelo - hPx); drawingContext.setLineDash([]);
   noStroke(); fill(c.col); textAlign(LEFT); textSize(12); text(fmtM(h) + (acotado ? ' (fuera de escala)' : ''), cx + 96, suelo - hPx);
 
-  astronauta(cx, suelo - y, 1.8, ph < 1 && ph > 0.03, c.col);
+  astronauta(cx, suelo - y, ESCALA_ASTRONAUTA_VISTA_PARTICULAR, ph < 1 && ph > 0.03, c.col);
   
 
 
