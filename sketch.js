@@ -65,6 +65,17 @@ let modoDescubre = false;
 let etapaDescubre = 0;
 
 
+// Escalas visuales de la vista general
+const ESCALA_PLANETAS_LINEA = 3.7;//3.5;//1.3;
+const ESCALA_PLANETAS_ORBITA = 1.05;//1.0;
+
+const ESCALA_ASTRONAUTA_LINEA = 1;//0.6;
+const ESCALA_ASTRONAUTA_ORBITA = 0.4;
+
+const DISTANCIA_LABEL_LINEA = 86;
+const DISTANCIA_LABEL_ORBITA = 24;
+const SEPARACION_FILAS_LINEA = 72;
+
 
 function preload() {
   for (const c of CUERPOS) if (ASSETS[c.nombre].img) imgs[c.nombre] = loadImage(ASSETS[c.nombre].img);
@@ -240,7 +251,14 @@ function dibujarSistema(e) {
 
   // Cuerpos celestes
   CUERPOS.forEach((c, i) => {
-    const p = pos[i], x = p.x, y = p.y, r = c.r, sobre = i === hover;
+    const p = pos[i], x = p.x, y = p.y;
+    const escalaPlanetas = lerp(
+      ESCALA_PLANETAS_LINEA,
+      ESCALA_PLANETAS_ORBITA,
+      mVal
+    );
+    const r = c.r * escalaPlanetas;
+    const sobre = i === hover;
     
     if (c.nombre === 'Saturno') {
       noFill(); stroke(180, 160, 120, 150); strokeWeight(3);
@@ -255,19 +273,68 @@ function dibujarSistema(e) {
     const altMax = lerp(min(130, y0 - 90), 130, mVal);
     const alt = altMax * escalaLog(altura(c)), ph = ((millis() / 1000) / 2.2 + i * 0.17) % 1, hSuelo = 4 * ph * (1 - ph) * alt;
     stroke(c.col); strokeWeight(1); drawingContext.setLineDash([3, 4]); line(x - 12, y - r - alt + 10, x + 12, y - r - alt + 10); drawingContext.setLineDash([]);
-    astronauta(x, y - r - hSuelo + 10, 0.4, ph > 0.05 && ph < 0.95, c.col);
+    const escalaAstronauta = lerp(
+      ESCALA_ASTRONAUTA_LINEA,
+      ESCALA_ASTRONAUTA_ORBITA,
+      mVal
+    );
+
+    astronauta(
+      x,
+      y - r - hSuelo + 10,
+      escalaAstronauta,
+      ph > 0.05 && ph < 0.95,
+      c.col
+    );
     
-    if (z < 0.5) { 
-      const fila = i % 2;
-      const ly = y0 + 34 + fila * 72;
-      const finalY = lerp(ly, y + r + 24, mVal);
 
-      if (fila && mVal < 0.5) { stroke(255, 30 * (1 - 2 * mVal)); line(x, y + r + 4, x, ly - 15); }
+    if (z < 0.5) {
+  const fila = i % 2;
 
-      noStroke(); textAlign(CENTER); fill(sobre ? c.col : 255); textSize(11); textStyle(BOLD); 
-      if (!(c.nombre === 'Luna' && mVal > 0.5 && !sobre)) text(c.nombre, x, finalY - 10);
-      textStyle(NORMAL); textSize(9.5); fill(c.col); text(fmtM(altura(c)), x, finalY);
-    }
+  // Vista alineada: etiquetas distribuidas en dos filas.
+  const ly = y0
+    + DISTANCIA_LABEL_LINEA
+    + fila * SEPARACION_FILAS_LINEA;
+
+  // Vista orbital: etiqueta debajo de cada planeta.
+  const distanciaOrbital = lerp(
+    DISTANCIA_LABEL_ORBITA,
+    DISTANCIA_LABEL_ORBITA * escalaPlanetas,
+    1
+  );
+
+  const yOrbital = y + r + distanciaOrbital;
+
+  // Interpolación entre ambos formatos.
+  const finalY = lerp(ly, yOrbital, mVal);
+
+  // Conector únicamente en la vista alineada.
+  if (fila && mVal < 0.5) {
+    stroke(255, 30 * (1 - 2 * mVal));
+    line(
+      x,
+      y + r + 4,
+      x,
+      ly - DISTANCIA_LABEL_LINEA / 2
+    );
+  }
+
+  noStroke();
+  textAlign(CENTER);
+  fill(sobre ? c.col : 255);
+  textSize(11);
+  textStyle(BOLD);
+
+  if (!(c.nombre === 'Luna' && mVal > 0.5 && !sobre)) {
+    text(c.nombre, x, finalY - 10);
+  }
+
+  textStyle(NORMAL);
+  textSize(9.5);
+  fill(c.col);
+  text(fmtM(altura(c)), x, finalY);
+}
+    
   });
   pop();
   if (z === 0 && zObj === 0) { cursor(hover >= 0 ? HAND : ARROW); if (hover >= 0) tooltip(CUERPOS[hover]); }
