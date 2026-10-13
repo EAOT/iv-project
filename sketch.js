@@ -37,6 +37,9 @@ let v0 = 3.0;
 let tOrbita = 0; 
 let faseSaltoDetalle = 0;
 
+
+
+
 const altura = c => v0 * v0 / (2 * c.g);
 const tiempo = c => 2 * v0 / c.g;
 const fmtM = m => m < 10 ? m.toFixed(2) + ' m' : m < 1000 ? m.toFixed(1) + ' m' : Math.round(m).toLocaleString('es') + ' m';
@@ -56,6 +59,12 @@ let z = 0, zObj = 0;
 let mVal = 1, mObj = 1;  // 0 = en línea · 1 = órbitas en movimiento
 const ZOOM_MAX = 40;
 const suave = (a, b, x) => { const t = constrain((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+
+
+let modoDescubre = false;
+let etapaDescubre = 0;
+
+
 
 function preload() {
   for (const c of CUERPOS) if (ASSETS[c.nombre].img) imgs[c.nombre] = loadImage(ASSETS[c.nombre].img);
@@ -77,7 +86,12 @@ function ajustar() {
   const hHeader = document.querySelector('header').offsetHeight;
   const hControles = document.getElementById('controles').offsetHeight;
   const hFooter = document.querySelector('footer').offsetHeight;
-  const hDisponible = windowHeight - hHeader - hControles - hFooter - 20;
+
+  const hPanel = modoDescubre
+  ? document.getElementById('descubre-panel').offsetHeight
+  : 0;
+  const hDisponible = windowHeight - hHeader - hControles - hFooter - hPanel - 24;
+
   
   const h = max(380, min(650, hDisponible));
   resizeCanvas(w, h);
@@ -88,6 +102,25 @@ function draw() {
   estrellas();
   
   const dt = min(deltaTime, 50) / 1000;
+
+ if (modoDescubre) {
+  if (sel) {
+    const tAnim = min(tiempo(sel), DUR_MAX);
+
+    faseSaltoDetalle += dt / (tAnim + 0.6);
+
+    if (faseSaltoDetalle >= 1) {
+      faseSaltoDetalle %= 1;
+
+      if (sonidoOn) reproducir(sel);
+    }
+
+    dibujarDetalle();
+  }
+
+  return;
+}
+
   const antes = z;
   z = constrain(z + (zObj ? 1 : -1) * dt, 0, 1);
   if ((antes < 1 && z === 1) || (antes > 0 && z === 0)) ajustar();
@@ -259,6 +292,117 @@ function astronauta(x, ySuelo, k, aire, acento) {
   pop();
 }
 
+
+/* ======================= VISTA Descubre la gravedad ====================== */
+function iniciarDescubre() {
+  modoDescubre = true;
+  etapaDescubre = 0;
+
+  // El recorrido comienza siempre en la Tierra.
+  sel = CUERPOS.find(c => c.nombre === 'Tierra');
+
+  // El tutorial tiene su propia animación.
+  faseSaltoDetalle = 0;
+  detalleFaseAnt = 1;
+
+  // La entrada al tutorial parte de una vista general limpia.
+  z = 0;
+  zObj = 0;
+
+  document.getElementById('descubre-panel').hidden = false;
+  document.getElementById('btn-descubre').hidden = true;
+  document.getElementById('btn-volver').hidden = true;
+
+  actualizarPanelDescubre();
+
+  if (sonidoOn && sel) reproducir(sel);
+}
+
+function actualizarPanelDescubre() {
+  const titulo = document.getElementById('descubre-titulo');
+  const texto = document.getElementById('descubre-texto');
+  const continuar = document.getElementById('descubre-continuar');
+
+  const etapas = [
+    {
+      titulo: '1. Empecemos por la Tierra',
+      texto: 'Observa el salto del astronauta. ¿Crees que podrías saltar igual en otros cuerpos celestes?',
+      boton: 'Probar en la Luna'
+    },
+    {
+      titulo: '2. Algo cambia en la Luna',
+      texto: 'Es el mismo astronauta y mantiene la misma velocidad inicial. Observa la altura y cuánto tarda en volver al suelo. ¿Qué crees que ha cambiado?',
+      boton: 'Descubrir por qué'
+    },
+    {
+      titulo: '3. ¿Por qué ocurre?',
+      texto: 'La gravedad atrae al astronauta hacia el suelo y frena su ascenso. Como la gravedad superficial de la Luna es menor que la de la Tierra, con el mismo impulso puede subir más y permanecer más tiempo en el aire.',
+      boton: 'Seguir explorando'
+    },
+    {
+      titulo: '4. Ahora te toca explorar',
+      texto: 'La Luna es solo un ejemplo. Explora los demás cuerpos celestes y descubre cómo cambian los saltos.',
+      boton: 'Volver al simulador'
+    }
+  ];
+
+  const etapa = etapas[etapaDescubre];
+
+  titulo.textContent = etapa.titulo;
+  texto.textContent = etapa.texto;
+  continuar.textContent = etapa.boton;
+}
+
+function avanzarDescubre() {
+  if (etapaDescubre >= 3) {
+    finalizarDescubre();
+    return;
+  }
+
+  etapaDescubre++;
+
+  // La comparación cambia de la Tierra a la Luna.
+  if (etapaDescubre === 1) {
+    sel = CUERPOS.find(c => c.nombre === 'Luna');
+    faseSaltoDetalle = 0;
+    detalleFaseAnt = 1;
+
+    if (sonidoOn && sel) reproducir(sel);
+  }
+
+  actualizarPanelDescubre();
+}
+
+function repetirSaltoDescubre() {
+  if (!modoDescubre || !sel) return;
+
+  faseSaltoDetalle = 0;
+  detalleFaseAnt = 1;
+
+  if (sonidoOn) reproducir(sel);
+}
+
+function finalizarDescubre() {
+  modoDescubre = false;
+  etapaDescubre = 0;
+
+  sel = null;
+  z = 0;
+  zObj = 0;
+  faseSaltoDetalle = 0;
+  detalleFaseAnt = 1;
+
+  detener();
+
+  document.getElementById('descubre-panel').hidden = true;
+  document.getElementById('btn-descubre').hidden = false;
+  document.getElementById('btn-volver').hidden = true;
+}
+
+
+
+
+
 /* ============================== DETALLE ============================== */
 function dibujarDetalle() {
   if (!sel) return;
@@ -273,11 +417,17 @@ function dibujarDetalle() {
   
   noStroke(); fill(c.col); imgs[c.nombre] ? image(imgs[c.nombre], width / 2 - 40, suelo, 80, 80) : rect(0, suelo, width, 12);
   const cx = width * 0.35;
+
   stroke(c.col); strokeWeight(1); drawingContext.setLineDash([4, 6]); line(cx - 90, suelo - hPx, cx + 90, suelo - hPx); drawingContext.setLineDash([]);
   noStroke(); fill(c.col); textAlign(LEFT); textSize(12); text(fmtM(h) + (acotado ? ' (fuera de escala)' : ''), cx + 96, suelo - hPx);
+
   astronauta(cx, suelo - y, 1, ph < 1 && ph > 0.03, c.col);
   
+
+
   const px = width < 640 ? 16 : width * 0.55, py = 25;
+
+
   fill(255); textAlign(LEFT); textStyle(BOLD); textSize(24); text(c.nombre, px, py + 10);
   textStyle(NORMAL); textSize(14); fill(220);
   const filas = ['Gravedad: ' + c.g + ' m/s²', 'Altura del salto: ' + fmtM(h), 'Tiempo en el aire: ' + fmtT(t),
@@ -330,7 +480,10 @@ function reproducir(c) {
 
 /* ============================ INTERACCIÓN ============================ */
 function mousePressed() {
-  if (z !== 0 || zObj !== 0 || mouseX < 0 || mouseY < 0 || mouseX > width || mouseY > height) return;
+  if (modoDescubre ||
+    z !== 0 || zObj !== 0 ||
+    mouseX < 0 || mouseY < 0 ||
+    mouseX > width || mouseY > height) return;
   const pos = posiciones();
   const i = cuerpoEn(mouseX, mouseY, pos);
   if (i < 0) return;
@@ -373,4 +526,18 @@ function iniciarUI() {
     detener(); 
     document.getElementById('btn-volver').hidden = true;
   });
+
+
+
+    document.getElementById('btn-descubre')
+    .addEventListener('click', iniciarDescubre);
+
+  document.getElementById('descubre-continuar')
+    .addEventListener('click', avanzarDescubre);
+
+  document.getElementById('descubre-repetir')
+    .addEventListener('click', repetirSaltoDescubre);
+
+  document.getElementById('descubre-salir')
+    .addEventListener('click', finalizarDescubre);
 }

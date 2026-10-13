@@ -86,3 +86,54 @@ footer {
   padding: .5rem 1rem; 
   margin-top: auto; 
 }
+
+
+
+#descubre-panel {
+  width: min(100% - 2rem, 900px);
+  margin: 0 auto 1rem;
+  
+  border: 1px solid var(--acento);
+  border-radius: 12px;
+  background: #101521;
+  color: var(--texto);
+  padding: 0.5rem 1rem;
+  margin-bottom: 0.25rem;
+}
+
+#descubre-panel[hidden] {
+  display: none;
+}
+
+#descubre-panel h2 {
+  margin: 0 0 0.5rem;
+  margin-bottom: 0.2rem;
+  font-size: clamp(1.15rem, 2.5vw, 1.5rem);
+}
+
+#descubre-panel p {
+  margin: 0;
+  line-height: 1.35;
+  color: var(--tenue);
+}
+
+.descubre-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+  gap: 0.5rem;
+}
+
+#btn-descubre {
+  border-color: var(--acento);
+}
+
+@media (max-width: 600px) {
+  #descubre-panel {
+    padding: 0.85rem;
+  }
+
+  .descubre-acciones button {
+    flex: 1 1 auto;
+  }
+}
