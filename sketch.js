@@ -66,7 +66,7 @@ let etapaDescubre = 0;
 
 
 // Escalas visuales de la vista general
-const ESCALA_PLANETAS_LINEA = 3.7;//3.5;//1.3;
+const ESCALA_PLANETAS_LINEA = 2.0;//3.5;//1.3;
 const ESCALA_PLANETAS_ORBITA = 1.05;//1.0;
 
 const ESCALA_ASTRONAUTA_LINEA = 1;//0.6;
@@ -238,20 +238,24 @@ function dibujarSistema(e) {
     }
   }
 
-  const sr = 35;
-  const solX = lerp(max(sr + 8, (width < 600 ? 70 : 110) - 70), cx, mVal);
-  const solY = lerp(y0, cy, mVal);
+
+
+  const escalaSol = lerp(ESCALA_PLANETAS_LINEA, ESCALA_PLANETAS_ORBITA, mVal);
+const sr = 35 * escalaSol;
+
+const solX = lerp(max(sr + 8, (width < 600 ? 70 : 110) - 70), cx, mVal);
+const solY = lerp(y0, cy, mVal);
 
   // Línea base de la vista alineada
   stroke(255, 45 * (1 - mVal));
   strokeWeight(1);
   line(solX + sr, y0, width - 20, y0);
 
-  // Sol
+  // Sol: escala según el modo de visualización
   noStroke();
-  fill(255, 170, 60, 30); circle(solX, solY, 70);
-  fill(255, 190, 80, 70); circle(solX, solY, 50);
-  fill('#ffb347'); circle(solX, solY, 36);
+  fill(255, 170, 60, 30); circle(solX, solY, 70 * escalaSol);
+  fill(255, 190, 80, 70); circle(solX, solY, 50 * escalaSol);
+  fill('#ffb347'); circle(solX, solY, 36 * escalaSol);
 
   // Rutas orbitales
   noFill();
