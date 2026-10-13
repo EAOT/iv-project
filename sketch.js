@@ -73,9 +73,12 @@ const ESCALA_ASTRONAUTA_LINEA = 1;//0.6;
 const ESCALA_ASTRONAUTA_ORBITA = 0.4;
 const ESCALA_ASTRONAUTA_VISTA_PARTICULAR = 1.8;//1;
 
-const DISTANCIA_LABEL_LINEA = 86;
+const DISTANCIA_LABEL_LINEA = 160;
 const DISTANCIA_LABEL_ORBITA = 24;
-const SEPARACION_FILAS_LINEA = 72;
+const SEPARACION_FILAS_LINEA = 10;
+
+const JUMP_LINE_HALF_L_SYSTEMS = 18
+const JUMP_LINE_GROSSOR_SYSTEMS = 3
 
 
 function preload() {
@@ -217,63 +220,129 @@ function cuerpoEn(mx, my, posArr) {
   return mejor;
 }
 
+
 function dibujarSistema(e) {
   const pos = posiciones(), cx = width / 2, cy = height / 2, y0 = height * 0.6;
   const hover = (z === 0 && zObj === 0) ? cuerpoEn(mouseX, mouseY, pos) : -1;
+
   push();
   drawingContext.globalAlpha = 1 - suave(0.6, 1, e);
-  
-  if (sel) { 
+
+  if (sel) {
     const i = CUERPOS.findIndex(c => c.nombre === sel.nombre);
     if (i !== -1 && pos[i]) {
       const s = 1 + e * (ZOOM_MAX - 1);
-      translate(lerp(pos[i].x, cx, e), lerp(pos[i].y, cy, e)); 
-      scale(s); 
+      translate(lerp(pos[i].x, cx, e), lerp(pos[i].y, cy, e));
+      scale(s);
       translate(-pos[i].x, -pos[i].y);
     }
   }
-  
+
   const sr = 35;
   const solX = lerp(max(sr + 8, (width < 600 ? 70 : 110) - 70), cx, mVal);
   const solY = lerp(y0, cy, mVal);
 
-  // Línea base modo alineado
-  stroke(255, 45 * (1 - mVal)); strokeWeight(1); line(solX + sr, y0, width - 20, y0);
+  // Línea base de la vista alineada
+  stroke(255, 45 * (1 - mVal));
+  strokeWeight(1);
+  line(solX + sr, y0, width - 20, y0);
 
   // Sol
-  noStroke(); fill(255, 170, 60, 30); circle(solX, solY, 70); fill(255, 190, 80, 70); circle(solX, solY, 50); fill('#ffb347'); circle(solX, solY, 36);
-  
-  // Rutas orbitales (desvanecen al alinear)
-  noFill(); stroke(255, 20 * mVal); strokeWeight(1);
-  pos.forEach(p => { if (p.nombre !== 'Luna') ellipse(cx, cy, p.rx * 2, p.ry * 2); });
-  
-  noStroke(); fill(120); textAlign(CENTER); textSize(11); textStyle(NORMAL);
-  text((mVal > 0.5 ? 'Sistema planetario en movimiento orbital continuo' : 'Planetas alineados por distancia al Sol') + ' · Escala logarítmica', cx, height - 12);
+  noStroke();
+  fill(255, 170, 60, 30); circle(solX, solY, 70);
+  fill(255, 190, 80, 70); circle(solX, solY, 50);
+  fill('#ffb347'); circle(solX, solY, 36);
+
+  // Rutas orbitales
+  noFill();
+  stroke(255, 20 * mVal);
+  strokeWeight(1);
+  pos.forEach(p => {
+    if (p.nombre !== 'Luna') ellipse(cx, cy, p.rx * 2, p.ry * 2);
+  });
+
+  noStroke();
+  fill(120);
+  textAlign(CENTER);
+  textSize(11);
+  textStyle(NORMAL);
+  text(
+    (mVal > 0.5
+      ? 'Sistema planetario en movimiento orbital continuo'
+      : 'Planetas alineados por distancia al Sol') + ' · Escala logarítmica',
+    cx,
+    height - 12
+  );
 
   // Cuerpos celestes
   CUERPOS.forEach((c, i) => {
-    const p = pos[i], x = p.x, y = p.y;
+    const p = pos[i];
+    const x = p.x;
+    const yOriginal = p.y;
+
     const escalaPlanetas = lerp(
       ESCALA_PLANETAS_LINEA,
       ESCALA_PLANETAS_ORBITA,
       mVal
     );
+
     const r = c.r * escalaPlanetas;
+
+    // En vista alineada, todos los planetas comparten el mismo piso.
+    // En vista orbital, se usa su coordenada vertical original.
+    // Línea guía común: punto de despegue de todos los astronautas
+    const lineaDespegue = y0;
+
+    // El borde superior de cada planeta queda justo debajo de la línea.
+    // Los planetas se desplazan hacia abajo según su radio.
+    const yAlineado = lineaDespegue + r;
+    const y = lerp(yAlineado, yOriginal, mVal);
+
     const sobre = i === hover;
-    
+
+    // Anillos de Saturno
     if (c.nombre === 'Saturno') {
-      noFill(); stroke(180, 160, 120, 150); strokeWeight(3);
+      noFill();
+      stroke(180, 160, 120, 150);
+      strokeWeight(3);
       ellipse(x, y, r * 3.5, r * 1.5);
       strokeWeight(1);
     }
-    
-    if (sobre) { noFill(); stroke(c.col); strokeWeight(1.5); circle(x, y, 2 * r + 12); }
-    noStroke(); fill(c.col); circle(x, y, 2 * r);
-    if (imgs[c.nombre]) image(imgs[c.nombre], x - r, y - r, 2 * r, 2 * r); else { fill(255, 45); circle(x - r * 0.3, y - r * 0.3, r * 0.8); }
-    
+
+    // Planeta
+    if (sobre) {
+      noFill();
+      stroke(c.col);
+      strokeWeight(1.5);
+      circle(x, y, 2 * r + 12);
+    }
+
+    noStroke();
+    fill(c.col);
+    circle(x, y, 2 * r);
+
+    if (imgs[c.nombre]) {
+      image(imgs[c.nombre], x - r, y - r, 2 * r, 2 * r);
+    } else {
+      fill(255, 45);
+      circle(x - r * 0.3, y - r * 0.3, r * 0.8);
+    }
+
+    // Salto del astronauta
     const altMax = lerp(min(130, y0 - 90), 130, mVal);
-    const alt = altMax * escalaLog(altura(c)), ph = ((millis() / 1000) / 2.2 + i * 0.17) % 1, hSuelo = 4 * ph * (1 - ph) * alt;
-    stroke(c.col); strokeWeight(1); drawingContext.setLineDash([3, 4]); line(x - 12, y - r - alt + 10, x + 12, y - r - alt + 10); drawingContext.setLineDash([]);
+    const alt = altMax * escalaLog(altura(c));
+    const ph = ((millis() / 1000) / 2.2 + i * 0.17) % 1;
+    const hSuelo = 4 * ph * (1 - ph) * alt;
+
+    
+    
+    stroke(c.col);
+    strokeWeight(JUMP_LINE_GROSSOR_SYSTEMS);
+    drawingContext.setLineDash([4, 3]);
+    
+    line(x - JUMP_LINE_HALF_L_SYSTEMS, y - r - alt + 10, x + JUMP_LINE_HALF_L_SYSTEMS, y - r - alt + 10);
+    drawingContext.setLineDash([]);
+
     const escalaAstronauta = lerp(
       ESCALA_ASTRONAUTA_LINEA,
       ESCALA_ASTRONAUTA_ORBITA,
@@ -287,59 +356,50 @@ function dibujarSistema(e) {
       ph > 0.05 && ph < 0.95,
       c.col
     );
-    
 
+    // Etiquetas
     if (z < 0.5) {
-  const fila = i % 2;
+      const fila = i % 2;
 
-  // Vista alineada: etiquetas distribuidas en dos filas.
-  const ly = y0
-    + DISTANCIA_LABEL_LINEA
-    + fila * SEPARACION_FILAS_LINEA;
+      // Etiquetas debajo del piso común en vista alineada
+      const ly = y0 + DISTANCIA_LABEL_LINEA + fila * SEPARACION_FILAS_LINEA;
 
-  // Vista orbital: etiqueta debajo de cada planeta.
-  const distanciaOrbital = lerp(
-    DISTANCIA_LABEL_ORBITA,
-    DISTANCIA_LABEL_ORBITA * escalaPlanetas,
-    1
-  );
+      // Etiquetas debajo de cada planeta en vista orbital
+      const yOrbital = y + r + DISTANCIA_LABEL_ORBITA;
 
-  const yOrbital = y + r + distanciaOrbital;
+      const finalY = lerp(ly, yOrbital, mVal);
 
-  // Interpolación entre ambos formatos.
-  const finalY = lerp(ly, yOrbital, mVal);
+      // Conector desde el planeta hasta su etiqueta
+      if (fila && mVal < 0.5) {
+        stroke(255, 30 * (1 - 2 * mVal));
+        line(x, y + r + 4, x, ly - 15);
+      }
 
-  // Conector únicamente en la vista alineada.
-  if (fila && mVal < 0.5) {
-    stroke(255, 30 * (1 - 2 * mVal));
-    line(
-      x,
-      y + r + 4,
-      x,
-      ly - DISTANCIA_LABEL_LINEA / 2
-    );
-  }
+      noStroke();
+      textAlign(CENTER);
+      fill(sobre ? c.col : 255);
+      textSize(11);
+      textStyle(BOLD);
 
-  noStroke();
-  textAlign(CENTER);
-  fill(sobre ? c.col : 255);
-  textSize(11);
-  textStyle(BOLD);
+      if (!(c.nombre === 'Luna' && mVal > 0.5 && !sobre)) {
+        text(c.nombre, x, finalY - 10);
+      }
 
-  if (!(c.nombre === 'Luna' && mVal > 0.5 && !sobre)) {
-    text(c.nombre, x, finalY - 10);
-  }
-
-  textStyle(NORMAL);
-  textSize(9.5);
-  fill(c.col);
-  text(fmtM(altura(c)), x, finalY);
-}
-    
+      textStyle(NORMAL);
+      textSize(9.5);
+      fill(c.col);
+      text(fmtM(altura(c)), x, finalY);
+    }
   });
+
   pop();
-  if (z === 0 && zObj === 0) { cursor(hover >= 0 ? HAND : ARROW); if (hover >= 0) tooltip(CUERPOS[hover]); }
+
+  if (z === 0 && zObj === 0) {
+    cursor(hover >= 0 ? HAND : ARROW);
+    if (hover >= 0) tooltip(CUERPOS[hover]);
+  }
 }
+
 
 function tooltip(c) {
   textStyle(NORMAL); textSize(13);
