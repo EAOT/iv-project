@@ -18,6 +18,10 @@
     <label>Velocidad inicial v₀: <output id="v0-out">3.0</output> m/s
       <input id="v0" type="range" min="1" max="5" step="0.1" value="3">
     </label>
+
+    <button id="btn-repetir" type="button" disabled hidden>
+    ↻ Repetir salto
+    </button>
     <button id="btn-sonido" type="button">🔇 Sonido apagado (pulsa para activar)</button>
     <button id="btn-modo">🪐 Vista: órbitas (pulsa para alinear)</button>
     <button id="btn-descubre" type="button">✨ Descubre la gravedad</button>
@@ -28,19 +32,31 @@
   <h2 id="descubre-titulo">Descubre la gravedad</h2>
   <p id="descubre-texto"></p>
 
-  <div class="descubre-acciones">
-    <button id="descubre-repetir" type="button">
-      ↻ Repetir salto
+  
+<div class="descubre-acciones">
+  <div class="acciones-izquierda">
+    
+
+    <button id="descubre-atras" type="button" disabled>
+      ← Atrás
     </button>
 
     <button id="descubre-continuar" type="button">
       Continuar
     </button>
+  </div>
 
+  <div class="acciones-centro">
+    
+  </div>
+
+  <div class="acciones-derecha">
     <button id="descubre-salir" type="button">
       ← Volver al simulador
     </button>
   </div>
+</div>
+
 </section>
 
   <main id="lienzo"></main>

@@ -117,23 +117,60 @@ footer {
   color: var(--tenue);
 }
 
+
 .descubre-acciones {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
   margin-top: 0.5rem;
   gap: 0.5rem;
 }
 
+.acciones-izquierda {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.acciones-centro {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.acciones-derecha {
+  display: flex;
+  justify-content: flex-end;
+}
+
+
 #btn-descubre {
   border-color: var(--acento);
 }
+
 
 @media (max-width: 600px) {
   #descubre-panel {
     padding: 0.85rem;
   }
 
+  .descubre-acciones {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .acciones-izquierda {
+    justify-content: flex-start;
+  }
+
+  .acciones-centro {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .acciones-derecha {
+    justify-content: flex-end;
+  }
+
   .descubre-acciones button {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
   }
 }

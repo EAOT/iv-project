@@ -55,8 +55,8 @@ function comparar(h) {
 
 /* ============================ ESTADO ================================= */
 let sel = null, imgs = {};
-let z = 0, zObj = 0;   
-let mVal = 1, mObj = 1;  // 0 = en línea · 1 = órbitas en movimiento
+let z = 0, zObj = 0;
+let mVal = 0, mObj = 0;  // 0 = en línea · 1 = órbitas en movimiento
 const ZOOM_MAX = 40;
 const suave = (a, b, x) => { const t = constrain((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 
@@ -332,20 +332,29 @@ const solY = lerp(y0, cy, mVal);
       circle(x - r * 0.3, y - r * 0.3, r * 0.8);
     }
 
+    
     // Salto del astronauta
     const altMax = lerp(min(130, y0 - 90), 130, mVal);
     const alt = altMax * escalaLog(altura(c));
     const ph = ((millis() / 1000) / 2.2 + i * 0.17) % 1;
     const hSuelo = 4 * ph * (1 - ph) * alt;
 
-    
-    
-    stroke(c.col);
-    strokeWeight(JUMP_LINE_GROSSOR_SYSTEMS);
-    drawingContext.setLineDash([4, 3]);
-    
-    line(x - JUMP_LINE_HALF_L_SYSTEMS, y - r - alt + 10, x + JUMP_LINE_HALF_L_SYSTEMS, y - r - alt + 10);
-    drawingContext.setLineDash([]);
+    // Mostrar la línea de altura solo en la vista alineada.
+    if (mVal < 0.5) {
+      stroke(c.col);
+      strokeWeight(JUMP_LINE_GROSSOR_SYSTEMS);
+      drawingContext.setLineDash([4, 3]);
+
+      line(
+        x - JUMP_LINE_HALF_L_SYSTEMS,
+        y - r - alt + 10,
+        x + JUMP_LINE_HALF_L_SYSTEMS,
+        y - r - alt + 10
+      );
+
+      drawingContext.setLineDash([]);
+    }
+
 
     const escalaAstronauta = lerp(
       ESCALA_ASTRONAUTA_LINEA,
@@ -428,10 +437,18 @@ function astronauta(x, ySuelo, k, aire, acento) {
 /* ======================= VISTA Descubre la gravedad ====================== */
 function iniciarDescubre() {
   modoDescubre = true;
+
+  document.getElementById('btn-modo').hidden = true;
+
   etapaDescubre = 0;
 
   // El recorrido comienza siempre en la Tierra.
   sel = CUERPOS.find(c => c.nombre === 'Tierra');
+
+
+  const btnRepetir = document.getElementById('btn-repetir');
+  btnRepetir.disabled = false;
+  btnRepetir.hidden = false;
 
   // El tutorial tiene su propia animación.
   faseSaltoDetalle = 0;
@@ -450,10 +467,12 @@ function iniciarDescubre() {
   if (sonidoOn && sel) reproducir(sel);
 }
 
+
 function actualizarPanelDescubre() {
   const titulo = document.getElementById('descubre-titulo');
   const texto = document.getElementById('descubre-texto');
   const continuar = document.getElementById('descubre-continuar');
+  const atras = document.getElementById('descubre-atras');
 
   const etapas = [
     {
@@ -468,12 +487,17 @@ function actualizarPanelDescubre() {
     },
     {
       titulo: '3. ¿Por qué ocurre?',
-      texto: 'La gravedad atrae al astronauta hacia el suelo y frena su ascenso. Como la gravedad superficial de la Luna es menor que la de la Tierra, con el mismo impulso puede subir más y permanecer más tiempo en el aire.',
-      boton: 'Seguir explorando'
+      texto: 'La gravedad atrae al astronauta y frena su ascenso. Con la misma velocidad inicial, una gravedad menor permite saltar más alto y permanecer más tiempo en el aire.',
+      boton: 'Conocer la velocidad de escape'
     },
     {
-      titulo: '4. Ahora te toca explorar',
-      texto: 'La Luna es solo un ejemplo. Explora los demás cuerpos celestes y descubre cómo cambian los saltos.',
+      titulo: '4. ¿Qué es la velocidad de escape?',
+      texto: 'La velocidad inicial influye en la altura del salto, mientras que la gravedad lo frena. Si un objeto alcanza la velocidad de escape, puede alejarse de un cuerpo celeste sin volver a caer, idealizando que no hay atmósfera ni propulsión adicional. ¡Compara este valor con la velocidad inicial!',
+      boton: 'Explorar otros cuerpos'
+    },
+    {
+      titulo: '5. Ahora te toca explorar',
+      texto: 'La Tierra y la Luna son solo el comienzo. Vuelve al simulador, selecciona otros cuerpos celestes y compara la gravedad, la altura de los saltos, el tiempo en el aire y la velocidad de escape.',
       boton: 'Volver al simulador'
     }
   ];
@@ -483,17 +507,20 @@ function actualizarPanelDescubre() {
   titulo.textContent = etapa.titulo;
   texto.textContent = etapa.texto;
   continuar.textContent = etapa.boton;
+
+  atras.disabled = etapaDescubre === 0;
 }
 
+
+
 function avanzarDescubre() {
-  if (etapaDescubre >= 3) {
+  if (etapaDescubre >= 4) {
     finalizarDescubre();
     return;
   }
 
   etapaDescubre++;
 
-  // La comparación cambia de la Tierra a la Luna.
   if (etapaDescubre === 1) {
     sel = CUERPOS.find(c => c.nombre === 'Luna');
     faseSaltoDetalle = 0;
@@ -505,8 +532,26 @@ function avanzarDescubre() {
   actualizarPanelDescubre();
 }
 
-function repetirSaltoDescubre() {
-  if (!modoDescubre || !sel) return;
+function retrocederDescubre() {
+  if (!modoDescubre || etapaDescubre <= 0) return;
+
+  etapaDescubre--;
+
+  if (etapaDescubre === 0) {
+    sel = CUERPOS.find(c => c.nombre === 'Tierra');
+    faseSaltoDetalle = 0;
+    detalleFaseAnt = 1;
+
+    if (sonidoOn && sel) reproducir(sel);
+  }
+
+  actualizarPanelDescubre();
+}
+
+
+
+function repetirSalto() {
+  if (!sel) return;
 
   faseSaltoDetalle = 0;
   detalleFaseAnt = 1;
@@ -514,9 +559,14 @@ function repetirSaltoDescubre() {
   if (sonidoOn) reproducir(sel);
 }
 
+
+
+
 function finalizarDescubre() {
   modoDescubre = false;
   etapaDescubre = 0;
+
+  document.getElementById('btn-modo').hidden = false;
 
   sel = null;
   z = 0;
@@ -529,6 +579,10 @@ function finalizarDescubre() {
   document.getElementById('descubre-panel').hidden = true;
   document.getElementById('btn-descubre').hidden = false;
   document.getElementById('btn-volver').hidden = true;
+
+  const btnRepetir = document.getElementById('btn-repetir');
+  btnRepetir.disabled = true;
+  btnRepetir.hidden = true;
 }
 
 
@@ -623,6 +677,9 @@ function mousePressed() {
   zObj = 1; 
   detalleFaseAnt = 1; 
   faseSaltoDetalle = 0;   
+  const btnRepetir = document.getElementById('btn-repetir');
+  btnRepetir.disabled = false;
+  btnRepetir.hidden = false;
   document.getElementById('btn-volver').hidden = false;
   reproducir(sel);
 }
@@ -657,6 +714,9 @@ function iniciarUI() {
     zObj = 0; 
     detener(); 
     document.getElementById('btn-volver').hidden = true;
+    const btnRepetir = document.getElementById('btn-repetir');
+    btnRepetir.disabled = true;
+    btnRepetir.hidden = true;
   });
 
 
@@ -666,10 +726,19 @@ function iniciarUI() {
 
   document.getElementById('descubre-continuar')
     .addEventListener('click', avanzarDescubre);
+  
+  document.getElementById('descubre-atras')
+  .addEventListener('click', retrocederDescubre);
 
-  document.getElementById('descubre-repetir')
-    .addEventListener('click', repetirSaltoDescubre);
+  
 
   document.getElementById('descubre-salir')
     .addEventListener('click', finalizarDescubre);
+
+  
+  const br = document.getElementById('btn-repetir');
+
+  br.addEventListener('click', () => {
+    repetirSalto();
+  });
 }
