@@ -514,14 +514,22 @@ function avanzarDescubre() {
   actualizarPanelDescubre();
 }
 
-function repetirSaltoDescubre() {
-  if (!modoDescubre || !sel) return;
+
+function repetirSalto() {
+  if (!sel) return;
 
   faseSaltoDetalle = 0;
   detalleFaseAnt = 1;
 
   if (sonidoOn) reproducir(sel);
 }
+
+function repetirSaltoDescubre() {
+  if (!modoDescubre) return;
+
+  repetirSalto();
+}
+
 
 function finalizarDescubre() {
   modoDescubre = false;
@@ -632,6 +640,9 @@ function mousePressed() {
   zObj = 1; 
   detalleFaseAnt = 1; 
   faseSaltoDetalle = 0;   
+  const btnRepetir = document.getElementById('btn-repetir');
+  btnRepetir.disabled = false;
+  btnRepetir.hidden = false;
   document.getElementById('btn-volver').hidden = false;
   reproducir(sel);
 }
@@ -666,6 +677,9 @@ function iniciarUI() {
     zObj = 0; 
     detener(); 
     document.getElementById('btn-volver').hidden = true;
+    const btnRepetir = document.getElementById('btn-repetir');
+    btnRepetir.disabled = true;
+    btnRepetir.hidden = true;
   });
 
 
@@ -681,4 +695,11 @@ function iniciarUI() {
 
   document.getElementById('descubre-salir')
     .addEventListener('click', finalizarDescubre);
+
+  
+  const br = document.getElementById('btn-repetir');
+
+  br.addEventListener('click', () => {
+    repetirSalto();
+  });
 }
