@@ -332,20 +332,29 @@ const solY = lerp(y0, cy, mVal);
       circle(x - r * 0.3, y - r * 0.3, r * 0.8);
     }
 
+    
     // Salto del astronauta
     const altMax = lerp(min(130, y0 - 90), 130, mVal);
     const alt = altMax * escalaLog(altura(c));
     const ph = ((millis() / 1000) / 2.2 + i * 0.17) % 1;
     const hSuelo = 4 * ph * (1 - ph) * alt;
 
-    
-    
-    stroke(c.col);
-    strokeWeight(JUMP_LINE_GROSSOR_SYSTEMS);
-    drawingContext.setLineDash([4, 3]);
-    
-    line(x - JUMP_LINE_HALF_L_SYSTEMS, y - r - alt + 10, x + JUMP_LINE_HALF_L_SYSTEMS, y - r - alt + 10);
-    drawingContext.setLineDash([]);
+    // Mostrar la línea de altura solo en la vista alineada.
+    if (mVal < 0.5) {
+      stroke(c.col);
+      strokeWeight(JUMP_LINE_GROSSOR_SYSTEMS);
+      drawingContext.setLineDash([4, 3]);
+
+      line(
+        x - JUMP_LINE_HALF_L_SYSTEMS,
+        y - r - alt + 10,
+        x + JUMP_LINE_HALF_L_SYSTEMS,
+        y - r - alt + 10
+      );
+
+      drawingContext.setLineDash([]);
+    }
+
 
     const escalaAstronauta = lerp(
       ESCALA_ASTRONAUTA_LINEA,
