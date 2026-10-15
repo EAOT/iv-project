@@ -442,6 +442,11 @@ function iniciarDescubre() {
   // El recorrido comienza siempre en la Tierra.
   sel = CUERPOS.find(c => c.nombre === 'Tierra');
 
+
+  const btnRepetir = document.getElementById('btn-repetir');
+  btnRepetir.disabled = false;
+  btnRepetir.hidden = false;
+
   // El tutorial tiene su propia animación.
   faseSaltoDetalle = 0;
   detalleFaseAnt = 1;
@@ -551,11 +556,7 @@ function repetirSalto() {
   if (sonidoOn) reproducir(sel);
 }
 
-function repetirSaltoDescubre() {
-  if (!modoDescubre) return;
 
-  repetirSalto();
-}
 
 
 function finalizarDescubre() {
@@ -573,6 +574,10 @@ function finalizarDescubre() {
   document.getElementById('descubre-panel').hidden = true;
   document.getElementById('btn-descubre').hidden = false;
   document.getElementById('btn-volver').hidden = true;
+
+  const btnRepetir = document.getElementById('btn-repetir');
+  btnRepetir.disabled = true;
+  btnRepetir.hidden = true;
 }
 
 
@@ -720,8 +725,7 @@ function iniciarUI() {
   document.getElementById('descubre-atras')
   .addEventListener('click', retrocederDescubre);
 
-  document.getElementById('descubre-repetir')
-    .addEventListener('click', repetirSaltoDescubre);
+  
 
   document.getElementById('descubre-salir')
     .addEventListener('click', finalizarDescubre);
