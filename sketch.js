@@ -55,8 +55,8 @@ function comparar(h) {
 
 /* ============================ ESTADO ================================= */
 let sel = null, imgs = {};
-let z = 0, zObj = 0;   
-let mVal = 1, mObj = 1;  // 0 = en línea · 1 = órbitas en movimiento
+let z = 0, zObj = 0;
+let mVal = 0, mObj = 0;  // 0 = en línea · 1 = órbitas en movimiento
 const ZOOM_MAX = 40;
 const suave = (a, b, x) => { const t = constrain((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 
