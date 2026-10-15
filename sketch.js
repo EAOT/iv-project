@@ -459,10 +459,12 @@ function iniciarDescubre() {
   if (sonidoOn && sel) reproducir(sel);
 }
 
+
 function actualizarPanelDescubre() {
   const titulo = document.getElementById('descubre-titulo');
   const texto = document.getElementById('descubre-texto');
   const continuar = document.getElementById('descubre-continuar');
+  const atras = document.getElementById('descubre-atras');
 
   const etapas = [
     {
@@ -477,12 +479,17 @@ function actualizarPanelDescubre() {
     },
     {
       titulo: '3. ¿Por qué ocurre?',
-      texto: 'La gravedad atrae al astronauta hacia el suelo y frena su ascenso. Como la gravedad superficial de la Luna es menor que la de la Tierra, con el mismo impulso puede subir más y permanecer más tiempo en el aire.',
-      boton: 'Seguir explorando'
+      texto: 'La gravedad atrae al astronauta y frena su ascenso. Con la misma velocidad inicial, una gravedad menor permite saltar más alto y permanecer más tiempo en el aire.',
+      boton: 'Conocer la velocidad de escape'
     },
     {
-      titulo: '4. Ahora te toca explorar',
-      texto: 'La Luna es solo un ejemplo. Explora los demás cuerpos celestes y descubre cómo cambian los saltos.',
+      titulo: '4. ¿Qué es la velocidad de escape?',
+      texto: 'La velocidad inicial influye en la altura del salto, mientras que la gravedad lo frena. Si un objeto alcanza la velocidad de escape, puede alejarse de un cuerpo celeste sin volver a caer, idealizando que no hay atmósfera ni propulsión adicional. ¡Compara este valor con la velocidad inicial!',
+      boton: 'Explorar otros cuerpos'
+    },
+    {
+      titulo: '5. Ahora te toca explorar',
+      texto: 'La Tierra y la Luna son solo el comienzo. Vuelve al simulador, selecciona otros cuerpos celestes y compara la gravedad, la altura de los saltos, el tiempo en el aire y la velocidad de escape.',
       boton: 'Volver al simulador'
     }
   ];
@@ -492,17 +499,20 @@ function actualizarPanelDescubre() {
   titulo.textContent = etapa.titulo;
   texto.textContent = etapa.texto;
   continuar.textContent = etapa.boton;
+
+  atras.disabled = etapaDescubre === 0;
 }
 
+
+
 function avanzarDescubre() {
-  if (etapaDescubre >= 3) {
+  if (etapaDescubre >= 4) {
     finalizarDescubre();
     return;
   }
 
   etapaDescubre++;
 
-  // La comparación cambia de la Tierra a la Luna.
   if (etapaDescubre === 1) {
     sel = CUERPOS.find(c => c.nombre === 'Luna');
     faseSaltoDetalle = 0;
@@ -513,6 +523,23 @@ function avanzarDescubre() {
 
   actualizarPanelDescubre();
 }
+
+function retrocederDescubre() {
+  if (!modoDescubre || etapaDescubre <= 0) return;
+
+  etapaDescubre--;
+
+  if (etapaDescubre === 0) {
+    sel = CUERPOS.find(c => c.nombre === 'Tierra');
+    faseSaltoDetalle = 0;
+    detalleFaseAnt = 1;
+
+    if (sonidoOn && sel) reproducir(sel);
+  }
+
+  actualizarPanelDescubre();
+}
+
 
 
 function repetirSalto() {
@@ -689,6 +716,9 @@ function iniciarUI() {
 
   document.getElementById('descubre-continuar')
     .addEventListener('click', avanzarDescubre);
+  
+  document.getElementById('descubre-atras')
+  .addEventListener('click', retrocederDescubre);
 
   document.getElementById('descubre-repetir')
     .addEventListener('click', repetirSaltoDescubre);
