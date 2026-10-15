@@ -437,6 +437,9 @@ function astronauta(x, ySuelo, k, aire, acento) {
 /* ======================= VISTA Descubre la gravedad ====================== */
 function iniciarDescubre() {
   modoDescubre = true;
+
+  document.getElementById('btn-modo').hidden = true;
+
   etapaDescubre = 0;
 
   // El recorrido comienza siempre en la Tierra.
@@ -562,6 +565,8 @@ function repetirSalto() {
 function finalizarDescubre() {
   modoDescubre = false;
   etapaDescubre = 0;
+
+  document.getElementById('btn-modo').hidden = false;
 
   sel = null;
   z = 0;
