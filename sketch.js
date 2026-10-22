@@ -46,12 +46,45 @@ const fmtM = m => m < 10 ? m.toFixed(2) + ' m' : m < 1000 ? m.toFixed(1) + ' m' 
 const fmtT = s => s < 60 ? s.toFixed(2) + ' s' : s < 3600 ? (s / 60).toFixed(1) + ' min' : (s / 3600).toFixed(1) + ' h';
 const escalaLog = h => Math.log(1 + h / 0.1) / Math.log(1 + 1e5 / 0.1);
 
+
 function comparar(h) {
-  const l = [[0.3,'un escalón bajo'],[0.8,'saltar una silla'],[1.5,'saltar una mesa alta'],[3,'llegar al techo de una habitación'],
-    [12,'saltar un edificio de 3 pisos'],[100,'superar un edificio de 30 pisos'],[500,'superar la Torre Eiffel (330 m)']];
-  for (const [m, t] of l) if (h < m) return 'Equivale a ' + t;
-  return 'Equivale a superar el Burj Khalifa (828 m) y seguir subiendo';
+  // Referencias aproximadas de altura, en metros.
+  const referencias = [
+    [0.15, ' un escalón'],
+    [0.30, ' un escalón alto'],
+    [0.45, 'l asiento de una silla'],
+    [0.75, ' una mesa'],
+    [1.10, 'l respaldo de una silla alta'],
+    [2.00, ' una puerta'],
+    [2.70, 'l techo de una habitación']
+  ];
+
+  if (h < 3) {
+    const [altura, objeto] = referencias.reduce((mejor, actual) =>
+      Math.abs(actual[0] - h) < Math.abs(mejor[0] - h) ? actual : mejor
+    );
+
+    return 'Es como saltar hasta la altura de' + objeto;
+  }
+
+  if (h < 300) {
+    const pisos = Math.round(h / 3); // 3 metros por piso.
+    return 'Es como saltar hasta un edificio de ' + pisos +
+      (pisos === 1 ? ' piso' : ' pisos');
+  }
+
+  if (h < 3000) {
+    const torres = Math.round(h / 60); // Torre de 20 pisos, ~60 m.
+    return 'Es como alcanzar ' + torres +
+      ' torres de 20 pisos apiladas';
+  }
+
+  const alturasAvion = (h / 10000).toFixed(1).replace('.', ',');
+
+  return 'Es como alcanzar ' + alturasAvion +
+    ' veces la altitud de crucero de un avión comercial (~10 km)';
 }
+
 
 /* ============================ ESTADO ================================= */
 let sel = null, imgs = {};
