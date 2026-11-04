@@ -14,14 +14,22 @@
     button:disabled { opacity: .5; }
     #ultimo { font-size: 32px; font-weight: bold; color: #ffd166; }
     .nota { max-width: 320px; font-size: 13px; color: #999; }
+    body { transition: background .2s; }
+    #cuenta { font-size: 72px; font-weight: bold; min-height: 90px; }
+    body[data-fase="cuenta"] { background: #2a2a12; }
+    body[data-fase="salta"]  { background: #1d4d2b; }
+    body[data-fase="ok"]     { background: #12324a; }
+    body[data-fase="error"]  { background: #4a1d1d; }
   </style>
 </head>
 <body>
   <h1>🧑‍🚀 Control del salto</h1>
   <p id="estado">Conectando…</p>
   <button id="btn-activar">Activar sensor</button>
+  <div id="cuenta">–</div>
+  <button id="btn-saltar" disabled>Saltar</button>
   <div id="ultimo">–</div>
-  <p class="nota">Guarda el teléfono firme en el bolsillo, salta y mira la pantalla del computador. Mantén esta página abierta.</p>
+  <p class="nota">Sostén el teléfono firme, toca «Saltar», espera la cuenta y salta!</p>
   <button id="btn-prueba" class="secundario">Enviar salto de prueba</button>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
