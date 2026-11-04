@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Control del salto</title>
+  <style>
+    body { margin: 0; min-height: 100vh; box-sizing: border-box; padding: 24px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+      background: #07090f; color: #eee; font-family: 'Trebuchet MS', sans-serif; text-align: center; }
+    button { width: 100%; max-width: 320px; padding: 14px 24px; border: 0; border-radius: 10px;
+      background: #3fae9c; color: #07090f; font: inherit; font-size: 18px; }
+    button.secundario { background: transparent; color: #aaa; border: 1px solid #444; font-size: 14px; }
+    button:disabled { opacity: .5; }
+    #ultimo { font-size: 32px; font-weight: bold; color: #ffd166; }
+    .nota { max-width: 320px; font-size: 13px; color: #999; }
+  </style>
+</head>
+<body>
+  <h1>🧑‍🚀 Control del salto</h1>
+  <p id="estado">Conectando…</p>
+  <button id="btn-activar">Activar sensor</button>
+  <div id="ultimo">–</div>
+  <p class="nota">Guarda el teléfono firme en el bolsillo, salta y mira la pantalla del computador. Mantén esta página abierta.</p>
+  <button id="btn-prueba" class="secundario">Enviar salto de prueba</button>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="control.js"></script>
+</body>
+</html>

@@ -697,6 +697,43 @@ function reproducir(c) {
   osc.start(t0); osc.stop(t0 + dur + 0.05); fuente = osc;
 }
 
+/* ========================== EMPAREJAMIENTO =========================== */
+function aplicarV0(valor) {
+  const sl = document.getElementById('v0');
+  const vMin = parseFloat(sl.min) || 0, vMax = parseFloat(sl.max) || 20;
+  v0 = constrain(valor, vMin, vMax);
+  sl.value = v0;
+  document.getElementById('v0-out').textContent = v0.toFixed(1);
+  // En la vista de detalle o en Descubre, repite el salto con el nuevo v0.
+  // En la vista general, las alturas se actualizan solas.
+  if (sel && (zObj === 1 || modoDescubre)) repetirSalto();
+}
+
+function iniciarEmparejamiento() {
+  if (typeof firebase === 'undefined') return; // sin Firebase, la página sigue funcionando
+  const SALA = Math.random().toString(36).slice(2, 6).toUpperCase();
+  const urlControl = new URL('control.html?sala=' + SALA, location.href).href;
+  const qr = document.getElementById('qr');
+  const estado = document.getElementById('estado-tel');
+  new QRCode(qr, { text: urlControl, width: 120, height: 120 });
+
+  const refSala = firebase.database().ref('salas/' + SALA);
+  refSala.onDisconnect().remove(); // limpia la sala al cerrar la pestaña
+
+  refSala.child('telefono').on('value', s => {
+    const conectado = s.exists();
+    qr.hidden = conectado;
+    estado.textContent = conectado ? '📱 Teléfono conectado' : 'Escanea el QR · sala ' + SALA;
+  });
+
+  refSala.child('salto').on('value', s => {
+    const d = s.val();
+    if (!d) return;
+    aplicarV0(d.v0);
+    estado.textContent = '📱 Último salto: ' + d.v0.toFixed(2) + ' m/s · ' + d.t.toFixed(2) + ' s en el aire';
+  });
+}
+
 /* ============================ INTERACCIÓN ============================ */
 function mousePressed() {
   if (modoDescubre ||
@@ -774,4 +811,6 @@ function iniciarUI() {
   br.addEventListener('click', () => {
     repetirSalto();
   });
+
+  iniciarEmparejamiento();
 }

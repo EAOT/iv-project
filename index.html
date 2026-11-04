@@ -7,6 +7,12 @@
   <link rel="stylesheet" href="style.css">
   <!-- p5.js por CDN (funciona en file:// y en GitHub Pages) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+
 </head>
 <body>
   <header>
@@ -61,6 +67,10 @@
 
   <main id="lienzo"></main>
   <footer>Datos: NASA Planetary Fact Sheet. Alturas: h = v₀² / 2g. Tiempo en el aire: t = 2v₀ / g.</footer>
+  <div id="emparejar">
+  <div id="qr"></div>
+  <span id="estado-tel">Conectando…</span>
+  </div>
 
   <script src="sketch.js"></script>
 </body>
