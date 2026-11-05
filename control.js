@@ -13,11 +13,13 @@ const VALLE_MAX = 0.6 * G;     // el vuelo debe bajar al menos hasta aquí
 const IMPULSO_MIN = 1.2 * G;   // impulso antes del despegue y pico de aterrizaje
 const T_MIN = 0.1, T_MAX = 1.2;
 let ref = null, escala = 1, muestrasCal = [], grabando = false, serie = [], audio = null;
-const debug = document.getElementById('debug');
+const debug = document.getElementById('debug') || { textContent: '' };
 
 function enviar(v0, t) {
-  ref.child('salto').set({ v0, t, ts: Date.now() });
   ultimo.textContent = v0.toFixed(2) + ' m/s';
+  if (!ref) { estado.textContent = '⚠ Sin conexión con Firebase'; return; }
+  ref.child('salto').set({ v0, t, ts: Date.now() })
+    .catch(err => estado.textContent = '⚠ ' + err.message);
 }
 
 function leerMovimiento(e) {
@@ -109,8 +111,9 @@ function iniciarTurno() {
     mostrar('¡SALTA!', 'salta'); bip(880, 0.25);
     setTimeout(() => {
       grabando = false;
-      analizar(serie);
-      btnSaltar.disabled = false;
+      try { analizar(serie); }
+      catch (err) { fallo('Error al analizar: ' + err.message); console.error(err); }
+      finally { btnSaltar.disabled = false; }
     }, VENTANA * 1000);
   }, 1000);
 }

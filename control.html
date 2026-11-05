@@ -29,9 +29,13 @@
   <div id="cuenta">–</div>
   <button id="btn-saltar" disabled>Saltar</button>
   <div id="ultimo">–</div>
+  <p id="debug" class="nota"></p>
   <p class="nota">Sostén el teléfono firme, toca «Saltar», espera la cuenta y salta!</p>
   <button id="btn-prueba" class="secundario">Enviar salto de prueba</button>
 
+    <script>
+    window.onerror = msg => { document.getElementById('estado').textContent = '⚠ ' + msg; };
+  </script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script src="firebase-config.js"></script>
