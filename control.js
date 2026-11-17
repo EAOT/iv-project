@@ -2,8 +2,8 @@ const SALA = new URLSearchParams(location.search).get('sala');
 const estado = document.getElementById('estado');
 const ultimo = document.getElementById('ultimo') || { textContent: '' };
 const btnActivar = document.getElementById('btn-activar');
-const btnPrueba = document.getElementById('btn-prueba');
-const cuenta = document.getElementById('cuenta');
+const btnPrueba = document.getElementById('btn-prueba');                  // opcional
+const cuenta = document.getElementById('cuenta') || { textContent: '' };  // opcional
 const debug = document.getElementById('debug') || { textContent: '' };
 
 const G = 9.81;
@@ -126,7 +126,8 @@ async function activarSensor() {
 
 if (!SALA) {
   estado.textContent = '⚠ Falta el código de sala. Escanea el QR desde el computador.';
-  btnActivar.disabled = btnPrueba.disabled = true;
+  btnActivar.disabled = true;
+    if (btnPrueba) btnPrueba.disabled = true;
 } else {
   ref = firebase.database().ref('salas/' + SALA);
   ref.child('telefono').set(true);
@@ -134,7 +135,7 @@ if (!SALA) {
   firebase.database().ref('.info/connected').on('value', s =>
     estado.textContent = s.val() ? 'Conectado a la sala ' + SALA : 'Sin conexión…');
   btnActivar.addEventListener('click', activarSensor);
-  btnPrueba.addEventListener('click', () => {
+  btnPrueba?.addEventListener('click', () => {
     const v0 = 2 + Math.random() * 2;
     enviarEvento({ fase: 'despegue' });
     setTimeout(() => enviarEvento({ fase: 'aterrizaje', v0, t: 2 * v0 / G }), 400);
