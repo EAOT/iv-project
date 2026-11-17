@@ -698,7 +698,7 @@ function reproducir(c) {
 }
 
 /* ========================== EMPAREJAMIENTO =========================== */
-function aplicarV0(valor) {
+function aplicarV0(valor, reiniciar = true) {
   const sl = document.getElementById('v0');
   const vMin = parseFloat(sl.min) || 0, vMax = parseFloat(sl.max) || 20;
   v0 = constrain(valor, vMin, vMax);
@@ -706,7 +706,7 @@ function aplicarV0(valor) {
   document.getElementById('v0-out').textContent = v0.toFixed(1);
   // En la vista de detalle o en Descubre, repite el salto con el nuevo v0.
   // En la vista general, las alturas se actualizan solas.
-  if (sel && (zObj === 1 || modoDescubre)) repetirSalto();
+  if (reiniciar && sel && (zObj === 1 || modoDescubre)) repetirSalto();
 }
 
 function iniciarEmparejamiento() {
@@ -726,12 +726,26 @@ function iniciarEmparejamiento() {
     estado.textContent = conectado ? '📱 Teléfono conectado' : 'Escanea el QR · sala ' + SALA;
   });
 
-  refSala.child('salto').on('value', s => {
+  refSala.child('evento').on('value', s => {
     const d = s.val();
     if (!d) return;
-    aplicarV0(d.v0);
-    estado.textContent = '📱 Último salto: ' + d.v0.toFixed(2) + ' m/s · ' + d.t.toFixed(2) + ' s en el aire';
-  });
+    if (d.fase === 'despegue') {
+      if (!sel) {                      // sin planeta a la vista: abre la Tierra
+        sel = CUERPOS.find(c => c.nombre === 'Tierra');
+        zObj = 1;
+        document.getElementById('btn-volver').hidden = false;
+        const br = document.getElementById('btn-repetir');
+        br.disabled = false; br.hidden = false;
+      }
+      repetirSalto();                  // arranca ya, con el v0 vigente
+      estado.textContent = '🧑‍🚀 ¡En el aire!';
+    } else if (d.fase === 'aterrizaje') {
+      aplicarV0(d.v0, false);          // corrige sin reiniciar la animación
+      estado.textContent = '📱 Salto: ' + d.v0.toFixed(2) + ' m/s · ' + d.t.toFixed(2) + ' s en el aire';
+    } else if (d.fase === 'cancelar') {
+      estado.textContent = 'Salto no válido, inténtalo de nuevo';
+    }
+  }, mostrarError);
 }
 
 /* ============================ INTERACCIÓN ============================ */
