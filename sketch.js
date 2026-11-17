@@ -745,7 +745,7 @@ function iniciarEmparejamiento() {
     } else if (d.fase === 'cancelar') {
       estado.textContent = 'Salto no válido, inténtalo de nuevo';
     }
-  }, mostrarError);
+  });
 }
 
 /* ============================ INTERACCIÓN ============================ */
