@@ -42,14 +42,29 @@ let saltoTelefono = null; // { inicio: tiempo local en segundos, duracion: segun
 let ultimoEventoTs = 0;
 let eventosListos = false;
 
+
 function actualizarFaseDesdeTelefono() {
-  if (!saltoTelefono || !saltoTelefono.activo) {
+  if (!saltoTelefono) {
     faseSaltoDetalle = 0;
     return;
   }
+
+  // La animación continúa hasta completarse, aunque el teléfono
+  // ya haya detectado el aterrizaje o haya vuelto a reposo.
   const transcurrido = max(0, millis() / 1000 - saltoTelefono.inicio);
-  faseSaltoDetalle = constrain(transcurrido / saltoTelefono.duracion, 0, 0.98);
+
+  faseSaltoDetalle = constrain(
+    transcurrido / saltoTelefono.duracion,
+    0,
+    1
+  );
+
+  // Al llegar al final, se conserva la fase 1.
+  if (faseSaltoDetalle >= 1) {
+    saltoTelefono.activo = false;
+  }
 }
+
 
 
 
@@ -387,8 +402,8 @@ const solY = lerp(y0, cy, mVal);
     const altMax = lerp(min(130, y0 - 90), 130, mVal);
     const alt = altMax * escalaLog(altura(c));
     const ph = telefonoConectado
-      ? (saltoTelefono && saltoTelefono.activo ? faseSaltoDetalle : 0)
-      : ((millis() / 1000) / 2.2 + i * 0.17) % 1;
+  ? (saltoTelefono ? faseSaltoDetalle : 0)
+  : ((millis() / 1000) / 2.2 + i * 0.17) % 1;
     const hSuelo = 4 * ph * (1 - ph) * alt;
 
     // Mostrar la línea de altura solo en la vista alineada.
@@ -774,38 +789,62 @@ function iniciarEmparejamiento() {
     if (!telefonoConectado || !eventosListos || !d || !d.ts || d.ts <= ultimoEventoTs) return;
     ultimoEventoTs = d.ts;
 
-    if (d.fase === 'despegue') {
-      if (!sel) { // sin planeta a la vista: abre la Tierra
-        sel = CUERPOS.find(c => c.nombre === 'Tierra');
-        zObj = 1;
-        document.getElementById('btn-volver').hidden = false;
-        const br = document.getElementById('btn-repetir');
-        br.disabled = false; br.hidden = false;
-      }
-      const duracionEstimada = max(0.25, min(tiempo(sel), DUR_MAX));
-      saltoTelefono = {
-        inicio: millis() / 1000,
-        duracion: duracionEstimada,
-        activo: true
-      };
-      faseSaltoDetalle = 0;
-      detalleFaseAnt = 1;
-      if (sonidoOn) reproducir(sel);
-      estado.textContent = '🧑‍🚀 ¡En el aire!';
-    } else if (d.fase === 'aterrizaje') {
-      aplicarV0(d.v0, false);
-      if (saltoTelefono) saltoTelefono.activo = false;
-      faseSaltoDetalle = 0;
-      detalleFaseAnt = 1;
-      detener();
-      estado.textContent = '📱 Salto: ' + d.v0.toFixed(2) + ' m/s · ' + d.t.toFixed(2) + ' s en el aire';
-    } else if (d.fase === 'cancelar') {
-      if (saltoTelefono) saltoTelefono.activo = false;
-      faseSaltoDetalle = 0;
-      detalleFaseAnt = 1;
-      detener();
-      estado.textContent = 'Salto no válido, inténtalo de nuevo';
-    }
+    
+if (d.fase === 'despegue') {
+
+  // Si hay un planeta seleccionado, se usa ese planeta.
+  // Si no, la Tierra solo sirve como referencia de duración.
+  // No se selecciona ni se hace zoom automáticamente.
+  const cuerpoAnimacion = sel ||
+    CUERPOS.find(c => c.nombre === 'Tierra');
+
+  const duracionEstimada = max(
+    0.25,
+    min(tiempo(cuerpoAnimacion), DUR_MAX)
+  );
+
+  // Cada nuevo despegue reinicia la animación desde cero.
+  saltoTelefono = {
+    inicio: millis() / 1000,
+    duracion: duracionEstimada,
+    activo: true
+  };
+
+  faseSaltoDetalle = 0;
+  detalleFaseAnt = 1;
+
+  // Solo reproducir sonido si existe un planeta seleccionado.
+  if (sonidoOn && sel) reproducir(sel);
+
+  estado.textContent = '🧑‍🚀 ¡En el aire!';
+}
+ 
+else if (d.fase === 'aterrizaje') {
+
+  // Actualiza los datos del salto, pero no interrumpe
+  // la animación visual que ya está en curso.
+  aplicarV0(d.v0, false);
+
+  detener();
+
+  estado.textContent =
+    '📱 Salto: ' +
+    d.v0.toFixed(2) +
+    ' m/s · ' +
+    d.t.toFixed(2) +
+    ' s en el aire';
+
+}
+else if (d.fase === 'cancelar') {
+
+  // La detección de reposo no cancela la animación.
+  detener();
+
+  estado.textContent =
+    'Salto detectado; completando animación';
+
+}
+
   });
 }
 
