@@ -38,10 +38,38 @@ let tOrbita = 0;
 let faseSaltoDetalle = 0;
 // El teléfono toma el control del ciclo mientras está conectado.
 let telefonoConectado = false;
-let saltoTelefono = null; // { inicio: tiempo local en segundos, duracion: segundos, activo: boolean }
+
 let ultimoEventoTs = 0;
 let eventosListos = false;
 
+
+
+let saltoTelefono = null; // { inicio: tiempo local en segundos, duracion: segundos, activo: boolean }
+// { inicio, v0, activo }
+
+// Calcula la fase usando la velocidad del salto y la gravedad
+// del cuerpo celeste, igual que en el modo normal.
+function faseSaltoTelefonoPara(c) {
+  if (!saltoTelefono) return 0;
+
+  const transcurrido = max(
+    0,
+    millis() / 1000 - saltoTelefono.inicio
+  );
+
+  const tiempoSalto = min(
+    2 * saltoTelefono.v0 / c.g,
+    DUR_MAX
+  );
+
+  const duracionAnimacion = tiempoSalto + 0.6;
+
+  return constrain(
+    transcurrido / duracionAnimacion,
+    0,
+    1
+  );
+}
 
 function actualizarFaseDesdeTelefono() {
   if (!saltoTelefono) {
@@ -49,22 +77,14 @@ function actualizarFaseDesdeTelefono() {
     return;
   }
 
-  // La animación continúa hasta completarse, aunque el teléfono
-  // ya haya detectado el aterrizaje o haya vuelto a reposo.
-  const transcurrido = max(0, millis() / 1000 - saltoTelefono.inicio);
+  if (sel) {
+    faseSaltoDetalle = faseSaltoTelefonoPara(sel);
+  }
 
-  faseSaltoDetalle = constrain(
-    transcurrido / saltoTelefono.duracion,
-    0,
-    1
-  );
-
-  // Al llegar al final, se conserva la fase 1.
   if (faseSaltoDetalle >= 1) {
     saltoTelefono.activo = false;
   }
 }
-
 
 
 
@@ -402,8 +422,9 @@ const solY = lerp(y0, cy, mVal);
     const altMax = lerp(min(130, y0 - 90), 130, mVal);
     const alt = altMax * escalaLog(altura(c));
     const ph = telefonoConectado
-  ? (saltoTelefono ? faseSaltoDetalle : 0)
-  : ((millis() / 1000) / 2.2 + i * 0.17) % 1;
+    ? faseSaltoTelefonoPara(c)
+    : ((millis() / 1000) / 2.2 + i * 0.17) % 1;
+
     const hSuelo = 4 * ph * (1 - ph) * alt;
 
     // Mostrar la línea de altura solo en la vista alineada.
@@ -706,30 +727,70 @@ const frecuenciaBase = g =>
   
 function detener() { if (fuente) { try { fuente.stop(); } catch (e) {} fuente = null; } }
 
-function reproducir(c) {
+
+function reproducir(c, velocidad = v0) {
   if (!sonidoOn || !ctx) return;
+
+  // Un nuevo salto reemplaza el sonido anterior.
   detener();
+
   const url = ASSETS[c.nombre].sonido;
-  if (url) { 
-    const a = new Audio(url); a.play(); fuente = { stop: () => a.pause() }; return;
+
+  const dur = min(
+    2 * velocidad / c.g,
+    DUR_MAX
+  ) + 0.6;
+
+  if (url) {
+    const a = new Audio(url);
+    a.play();
+    fuente = {
+      stop: () => {
+        a.pause();
+        a.currentTime = 0;
+      }
+    };
+    return;
   }
-  const dur = min(tiempo(c), DUR_MAX), f = frecuenciaBase(c.g), t0 = ctx.currentTime;
-  const osc = ctx.createOscillator(), filtro = ctx.createBiquadFilter(), amp = ctx.createGain();
-  osc.type = c.tipo === 'rocoso' ? 'triangle' : c.tipo === 'gigante' ? 'sine' : 'sawtooth';
-  filtro.type = 'lowpass'; filtro.frequency.value = c.tipo === 'menor' ? f * 3 : 8000;  
-  
-  const f1 = f * (1 + 0.8 * escalaLog(altura(c)));
+
+  const f = frecuenciaBase(c.g);
+  const t0 = ctx.currentTime;
+
+  const osc = ctx.createOscillator();
+  const filtro = ctx.createBiquadFilter();
+  const amp = ctx.createGain();
+
+  osc.type =
+    c.tipo === 'rocoso' ? 'triangle' :
+    c.tipo === 'gigante' ? 'sine' :
+    'sawtooth';
+
+  filtro.type = 'lowpass';
+  filtro.frequency.value =
+    c.tipo === 'menor' ? f * 3 : 8000;
+
+  const h = velocidad * velocidad / (2 * c.g);
+  const f1 = f * (1 + 0.8 * escalaLog(h));
+
   osc.frequency.setValueAtTime(f, t0);
   osc.frequency.linearRampToValueAtTime(f1, t0 + dur / 2);
   osc.frequency.linearRampToValueAtTime(f, t0 + dur);
-  
+
   amp.gain.setValueAtTime(0.0001, t0);
-  amp.gain.linearRampToValueAtTime(0.25, t0 + Math.min(0.03, dur / 4));
+  amp.gain.linearRampToValueAtTime(
+    0.25,
+    t0 + Math.min(0.03, dur / 4)
+  );
   amp.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
-  
+
   osc.connect(filtro).connect(amp).connect(ctx.destination);
-  osc.start(t0); osc.stop(t0 + dur + 0.05); fuente = osc;
+
+  osc.start(t0);
+  osc.stop(t0 + dur + 0.05);
+
+  fuente = osc;
 }
+
 
 /* ========================== EMPAREJAMIENTO =========================== */
 function aplicarV0(valor, reiniciar = true) {
@@ -790,45 +851,42 @@ function iniciarEmparejamiento() {
     ultimoEventoTs = d.ts;
 
     
+
 if (d.fase === 'despegue') {
 
-  // Si hay un planeta seleccionado, se usa ese planeta.
-  // Si no, la Tierra solo sirve como referencia de duración.
-  // No se selecciona ni se hace zoom automáticamente.
-  const cuerpoAnimacion = sel ||
-    CUERPOS.find(c => c.nombre === 'Tierra');
-
-  const duracionEstimada = max(
-    0.25,
-    min(tiempo(cuerpoAnimacion), DUR_MAX)
-  );
-
-  // Cada nuevo despegue reinicia la animación desde cero.
+  // Inicia un nuevo salto utilizando la última velocidad registrada.
+  // La velocidad queda congelada para esta animación.
   saltoTelefono = {
     inicio: millis() / 1000,
-    duracion: duracionEstimada,
+    v0: v0,
     activo: true
   };
 
   faseSaltoDetalle = 0;
   detalleFaseAnt = 1;
 
-  // Solo reproducir sonido si existe un planeta seleccionado.
-  if (sonidoOn && sel) reproducir(sel);
+  // El sonido usa la misma velocidad y duración que la animación.
+  // Si no hay planeta seleccionado, utiliza la Tierra como referencia.
+  const cuerpoSonido = sel ||
+    CUERPOS.find(c => c.nombre === 'Tierra');
+
+  if (sonidoOn && cuerpoSonido) {
+    reproducir(cuerpoSonido);
+  }
 
   estado.textContent = '🧑‍🚀 ¡En el aire!';
 }
+
  
+
 else if (d.fase === 'aterrizaje') {
 
-  // Actualiza los datos del salto, pero no interrumpe
-  // la animación visual que ya está en curso.
+  // Guarda la nueva velocidad para el próximo salto.
+  // No modifica la animación que ya está en curso.
   aplicarV0(d.v0, false);
 
-  detener();
-
   estado.textContent =
-    '📱 Salto: ' +
+    '📱 Salto registrado: ' +
     d.v0.toFixed(2) +
     ' m/s · ' +
     d.t.toFixed(2) +
@@ -837,13 +895,13 @@ else if (d.fase === 'aterrizaje') {
 }
 else if (d.fase === 'cancelar') {
 
-  // La detección de reposo no cancela la animación.
-  detener();
-
+  // Una cancelación del sensor no interrumpe
+  // la animación ni el sonido ya iniciados.
   estado.textContent =
     'Salto detectado; completando animación';
 
 }
+
 
   });
 }
