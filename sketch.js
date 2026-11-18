@@ -36,6 +36,20 @@ const G_MIN = 0.0001, G_MAX = 24.79, DUR_MAX = 12;
 let v0 = 3.0; 
 let tOrbita = 0; 
 let faseSaltoDetalle = 0;
+// El teléfono toma el control del ciclo mientras está conectado.
+let telefonoConectado = false;
+let saltoTelefono = null; // { inicio: tiempo local en segundos, duracion: segundos, activo: boolean }
+let ultimoEventoTs = 0;
+let eventosListos = false;
+
+function actualizarFaseDesdeTelefono() {
+  if (!saltoTelefono || !saltoTelefono.activo) {
+    faseSaltoDetalle = 0;
+    return;
+  }
+  const transcurrido = max(0, millis() / 1000 - saltoTelefono.inicio);
+  faseSaltoDetalle = constrain(transcurrido / saltoTelefono.duracion, 0, 0.98);
+}
 
 
 
@@ -153,14 +167,15 @@ function draw() {
 
  if (modoDescubre) {
   if (sel) {
-    const tAnim = min(tiempo(sel), DUR_MAX);
-
-    faseSaltoDetalle += dt / (tAnim + 0.6);
-
-    if (faseSaltoDetalle >= 1) {
-      faseSaltoDetalle %= 1;
-
-      if (sonidoOn) reproducir(sel);
+    if (telefonoConectado) {
+      actualizarFaseDesdeTelefono();
+    } else {
+      const tAnim = min(tiempo(sel), DUR_MAX);
+      faseSaltoDetalle += dt / (tAnim + 0.6);
+      if (faseSaltoDetalle >= 1) {
+        faseSaltoDetalle %= 1;
+        if (sonidoOn) reproducir(sel);
+      }
     }
 
     dibujarDetalle();
@@ -179,7 +194,9 @@ function draw() {
     if (zObj === 0) sel = null; 
   }
 
-  if (sel) {
+  if (telefonoConectado) {
+    actualizarFaseDesdeTelefono();
+  } else if (sel) {
     const tAnim = min(tiempo(sel), DUR_MAX);
     faseSaltoDetalle += dt / (tAnim + 0.6);
     if (faseSaltoDetalle >= 1) faseSaltoDetalle %= 1;
@@ -369,7 +386,9 @@ const solY = lerp(y0, cy, mVal);
     // Salto del astronauta
     const altMax = lerp(min(130, y0 - 90), 130, mVal);
     const alt = altMax * escalaLog(altura(c));
-    const ph = ((millis() / 1000) / 2.2 + i * 0.17) % 1;
+    const ph = telefonoConectado
+      ? (saltoTelefono && saltoTelefono.activo ? faseSaltoDetalle : 0)
+      : ((millis() / 1000) / 2.2 + i * 0.17) % 1;
     const hSuelo = 4 * ph * (1 - ph) * alt;
 
     // Mostrar la línea de altura solo en la vista alineada.
@@ -497,7 +516,7 @@ function iniciarDescubre() {
 
   actualizarPanelDescubre();
 
-  if (sonidoOn && sel) reproducir(sel);
+  if (!telefonoConectado && sonidoOn && sel) reproducir(sel);
 }
 
 
@@ -559,7 +578,7 @@ function avanzarDescubre() {
     faseSaltoDetalle = 0;
     detalleFaseAnt = 1;
 
-    if (sonidoOn && sel) reproducir(sel);
+    if (!telefonoConectado && sonidoOn && sel) reproducir(sel);
   }
 
   actualizarPanelDescubre();
@@ -575,7 +594,7 @@ function retrocederDescubre() {
     faseSaltoDetalle = 0;
     detalleFaseAnt = 1;
 
-    if (sonidoOn && sel) reproducir(sel);
+    if (!telefonoConectado && sonidoOn && sel) reproducir(sel);
   }
 
   actualizarPanelDescubre();
@@ -584,7 +603,7 @@ function retrocederDescubre() {
 
 
 function repetirSalto() {
-  if (!sel) return;
+  if (!sel || telefonoConectado) return;
 
   faseSaltoDetalle = 0;
   detalleFaseAnt = 1;
@@ -631,7 +650,7 @@ function dibujarDetalle() {
   const ph = faseSaltoDetalle;
   const y = ph < 1 ? 4 * ph * (1 - ph) * hPx : 0;
   
-  if (ph < 1 && ph < detalleFaseAnt && zObj === 1) reproducir(c);
+  if (!telefonoConectado && ph < 1 && ph < detalleFaseAnt && zObj === 1) reproducir(c);
   detalleFaseAnt = ph;
   
   noStroke(); fill(c.col); imgs[c.nombre] ? image(imgs[c.nombre], width / 2 - 40, suelo, 80, 80) : rect(0, suelo, width, 12);
@@ -721,28 +740,70 @@ function iniciarEmparejamiento() {
   refSala.onDisconnect().remove(); // limpia la sala al cerrar la pestaña
 
   refSala.child('telefono').on('value', s => {
-    const conectado = s.exists();
+    const conectado = s.val() === true;
     qr.hidden = conectado;
-    estado.textContent = conectado ? '📱 Teléfono conectado' : 'Escanea el QR · sala ' + SALA;
+
+    if (conectado !== telefonoConectado) {
+      telefonoConectado = conectado;
+      saltoTelefono = null;
+      faseSaltoDetalle = 0;
+      detalleFaseAnt = 1;
+      detener();
+      if (conectado) {
+        // Lee el evento que ya existía para no repetir un salto de una sesión anterior.
+        eventosListos = false;
+        refSala.child('evento').once('value').then(eventoPrevio => {
+          const anterior = eventoPrevio.val();
+          ultimoEventoTs = anterior && anterior.ts ? anterior.ts : 0;
+          eventosListos = telefonoConectado;
+        });
+        estado.textContent = '📱 Teléfono conectado · esperando un salto';
+      } else {
+        eventosListos = false;
+        estado.textContent = 'Escanea el QR · sala ' + SALA;
+      }
+    } else {
+      estado.textContent = conectado
+        ? '📱 Teléfono conectado · esperando un salto'
+        : 'Escanea el QR · sala ' + SALA;
+    }
   });
 
   refSala.child('evento').on('value', s => {
     const d = s.val();
-    if (!d) return;
+    if (!telefonoConectado || !eventosListos || !d || !d.ts || d.ts <= ultimoEventoTs) return;
+    ultimoEventoTs = d.ts;
+
     if (d.fase === 'despegue') {
-      if (!sel) {                      // sin planeta a la vista: abre la Tierra
+      if (!sel) { // sin planeta a la vista: abre la Tierra
         sel = CUERPOS.find(c => c.nombre === 'Tierra');
         zObj = 1;
         document.getElementById('btn-volver').hidden = false;
         const br = document.getElementById('btn-repetir');
         br.disabled = false; br.hidden = false;
       }
-      repetirSalto();                  // arranca ya, con el v0 vigente
+      const duracionEstimada = max(0.25, min(tiempo(sel), DUR_MAX));
+      saltoTelefono = {
+        inicio: millis() / 1000,
+        duracion: duracionEstimada,
+        activo: true
+      };
+      faseSaltoDetalle = 0;
+      detalleFaseAnt = 1;
+      if (sonidoOn) reproducir(sel);
       estado.textContent = '🧑‍🚀 ¡En el aire!';
     } else if (d.fase === 'aterrizaje') {
-      aplicarV0(d.v0, false);          // corrige sin reiniciar la animación
+      aplicarV0(d.v0, false);
+      if (saltoTelefono) saltoTelefono.activo = false;
+      faseSaltoDetalle = 0;
+      detalleFaseAnt = 1;
+      detener();
       estado.textContent = '📱 Salto: ' + d.v0.toFixed(2) + ' m/s · ' + d.t.toFixed(2) + ' s en el aire';
     } else if (d.fase === 'cancelar') {
+      if (saltoTelefono) saltoTelefono.activo = false;
+      faseSaltoDetalle = 0;
+      detalleFaseAnt = 1;
+      detener();
       estado.textContent = 'Salto no válido, inténtalo de nuevo';
     }
   });
@@ -765,7 +826,7 @@ function mousePressed() {
   btnRepetir.disabled = false;
   btnRepetir.hidden = false;
   document.getElementById('btn-volver').hidden = false;
-  reproducir(sel);
+  if (!telefonoConectado) reproducir(sel);
 }
 
 function iniciarUI() {
@@ -779,7 +840,11 @@ function iniciarUI() {
   
   bs.addEventListener('click', () => { 
     sonidoOn = !sonidoOn;
-    if (sonidoOn) { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); ctx.resume(); if (sel && zObj) reproducir(sel); }
+    if (sonidoOn) {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      ctx.resume();
+      if (sel && zObj && !telefonoConectado) reproducir(sel);
+    }
     else detener();
     bs.classList.toggle('on', sonidoOn);
     bs.textContent = sonidoOn ? '🔊 Sonido activo (pulsa para detener)' : '🔇 Sonido apagado (pulsa para activar)';
