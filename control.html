@@ -20,6 +20,12 @@
     body[data-fase="salta"]  { background: #1d4d2b; }
     body[data-fase="ok"]     { background: #12324a; }
     body[data-fase="error"]  { background: #4a1d1d; }
+    #planetas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; max-width: 340px; }
+    button.planeta { width: auto; padding: 8px 4px; font-size: 13px; background: #151a24; color: #ddd;
+      border: 2px solid var(--col, #444); }
+    button.planeta.activo { background: var(--col, #3fae9c); color: #07090f; font-weight: bold; }
+    button.planeta.general { grid-column: 1 / -1; --col: #666; }
+    #planeta-info { margin: 0; font-size: 14px; color: var(--acento, #3fae9c); }
   </style>
 </head>
 <body>
@@ -29,6 +35,8 @@
   <div id="cuenta">–</div>
   <div id="ultimo">–</div>
   <p id="debug" class="nota"></p>
+  <p id="planeta-info"></p>
+  <div id="planetas"></div>
   <p class="nota">Sostén el teléfono firme, espera la cuenta y salta!</p>
 
     <script>

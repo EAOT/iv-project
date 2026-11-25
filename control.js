@@ -13,6 +13,44 @@ const VENTANA_IMPULSO = 0.6;  // s máx. entre impulso y despegue
 const T_MIN = 0.1, T_MAX = 1.2;
 const PAUSA = 0.8;            // s de descanso tras cada salto
 
+// Deben coincidir exactamente con los nombres de CUERPOS en sketch.js
+const PLANETAS = [
+  ['Mercurio', 3.70, '#b5a7a7'], ['Venus', 8.87, '#e3bb76'], ['Tierra', 9.81, '#3fae9c'],
+  ['Luna', 1.62, '#cfd3da'], ['Marte', 3.71, '#e0673a'], ['Cometa 67P', 0.0001, '#6b6f76'],
+  ['Júpiter', 24.79, '#c9ad8a'], ['Saturno', 10.44, '#e3cb8f'], ['Urano', 8.69, '#a3d8d8'],
+  ['Neptuno', 11.15, '#3d5ed1'], ['Plutón', 0.62, '#a08c78']
+];
+const contPlanetas = document.getElementById('planetas');
+const planetaInfo = document.getElementById('planeta-info');
+let refPlaneta = null;
+
+function elegirPlaneta(nombre) {
+  refPlaneta.set(nombre).catch(err => estado.textContent = '⚠ ' + err.message);
+}
+
+function marcarPlaneta(nombre) {
+  contPlanetas.querySelectorAll('button').forEach(b =>
+    b.classList.toggle('activo', b.dataset.nombre === (nombre || '')));
+  const p = PLANETAS.find(p => p[0] === nombre);
+  planetaInfo.textContent = p ? 'En pantalla: ' + p[0] + ' · g = ' + p[1] + ' m/s²' : 'En pantalla: vista general';
+  document.body.style.setProperty('--acento', p ? p[2] : '#3fae9c');
+}
+
+function crearSelector() {
+  PLANETAS.forEach(([nombre, , col]) => {
+    const b = document.createElement('button');
+    b.className = 'planeta'; b.dataset.nombre = nombre; b.textContent = nombre;
+    b.style.setProperty('--col', col);
+    b.addEventListener('click', () => elegirPlaneta(nombre));
+    contPlanetas.appendChild(b);
+  });
+  const vg = document.createElement('button');
+  vg.className = 'planeta general'; vg.dataset.nombre = ''; vg.textContent = 'Vista general';
+  vg.addEventListener('click', () => elegirPlaneta(null));
+  contPlanetas.appendChild(vg);
+  refPlaneta.on('value', s => marcarPlaneta(s.val()));
+}
+
 let ref = null, audio = null, escala = 1, muestrasCal = [];
 let fase = 'APAGADO';         // APAGADO · REPOSO · IMPULSO · VUELO · PAUSA
 let tImpulso = 0, tDespegue = 0, tPausa = 0, bajas = 0, altas = 0;
@@ -132,6 +170,8 @@ if (!SALA) {
   ref = firebase.database().ref('salas/' + SALA);
   ref.child('telefono').set(true);
   ref.child('telefono').onDisconnect().remove();
+  refPlaneta = ref.child('planeta');
+  crearSelector();
   firebase.database().ref('.info/connected').on('value', s =>
     estado.textContent = s.val() ? 'Conectado a la sala ' + SALA : 'Sin conexión…');
   btnActivar.addEventListener('click', activarSensor);

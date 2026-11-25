@@ -41,6 +41,8 @@ let telefonoConectado = false;
 
 let ultimoEventoTs = 0;
 let eventosListos = false;
+let refPlaneta = null;
+let ultimoPublicado; // último planeta enviado a Firebase (undefined = nada aún)
 
 
 
@@ -195,6 +197,7 @@ function ajustar() {
 }
 
 function draw() {
+  publicarPlaneta();
   background('#07090f'); 
   estrellas();
   
@@ -804,6 +807,34 @@ function aplicarV0(valor, reiniciar = true) {
   if (reiniciar && sel && (zObj === 1 || modoDescubre)) repetirSalto();
 }
 
+function abrirPlaneta(c) {
+  sel = c;
+  zObj = 1;
+  detalleFaseAnt = 1;
+  faseSaltoDetalle = 0;
+  const br = document.getElementById('btn-repetir');
+  br.disabled = false; br.hidden = false;
+  document.getElementById('btn-volver').hidden = false;
+  if (!telefonoConectado) reproducir(sel);
+}
+
+function cerrarPlaneta() {
+  zObj = 0;
+  detener();
+  document.getElementById('btn-volver').hidden = true;
+  const br = document.getElementById('btn-repetir');
+  br.disabled = true; br.hidden = true;
+}
+
+// Publica el planeta visible cuando cambia, sin importar qué lo cambió
+function publicarPlaneta() {
+  if (!refPlaneta) return;
+  const actual = sel && (zObj === 1 || modoDescubre) ? sel.nombre : null;
+  if (actual === ultimoPublicado) return;
+  ultimoPublicado = actual;
+  refPlaneta.set(actual);
+}
+
 function iniciarEmparejamiento() {
   if (typeof firebase === 'undefined') return; // sin Firebase, la página sigue funcionando
   const SALA = Math.random().toString(36).slice(2, 6).toUpperCase();
@@ -904,6 +935,19 @@ else if (d.fase === 'cancelar') {
 
 
   });
+
+    refPlaneta = refSala.child('planeta');
+  refPlaneta.on('value', s => {
+    const nombre = s.val();
+    if (modoDescubre) {                        // el tutorial manda: corrige al teléfono
+      if (sel && nombre !== sel.nombre) refPlaneta.set(sel.nombre);
+      return;
+    }
+    ultimoPublicado = nombre;                  // evita reenviar lo que acaba de llegar
+    if (nombre === null) { if (zObj === 1) cerrarPlaneta(); return; }
+    const c = CUERPOS.find(c => c.nombre === nombre);
+    if (c && !(sel === c && zObj === 1)) abrirPlaneta(c);
+  });
 }
 
 /* ============================ INTERACCIÓN ============================ */
@@ -915,15 +959,7 @@ function mousePressed() {
   const pos = posiciones();
   const i = cuerpoEn(mouseX, mouseY, pos);
   if (i < 0) return;
-  sel = CUERPOS[i]; 
-  zObj = 1; 
-  detalleFaseAnt = 1; 
-  faseSaltoDetalle = 0;   
-  const btnRepetir = document.getElementById('btn-repetir');
-  btnRepetir.disabled = false;
-  btnRepetir.hidden = false;
-  document.getElementById('btn-volver').hidden = false;
-  if (!telefonoConectado) reproducir(sel);
+  abrirPlaneta(CUERPOS[i]);
 }
 
 function iniciarUI() {
@@ -956,18 +992,9 @@ function iniciarUI() {
     });
   }
   
-  document.getElementById('btn-volver').addEventListener('click', () => { 
-    zObj = 0; 
-    detener(); 
-    document.getElementById('btn-volver').hidden = true;
-    const btnRepetir = document.getElementById('btn-repetir');
-    btnRepetir.disabled = true;
-    btnRepetir.hidden = true;
-  });
+  document.getElementById('btn-volver').addEventListener('click', cerrarPlaneta);
 
-
-
-    document.getElementById('btn-descubre')
+  document.getElementById('btn-descubre')
     .addEventListener('click', iniciarDescubre);
 
   document.getElementById('descubre-continuar')
