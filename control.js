@@ -23,6 +23,7 @@ const PLANETAS = [
 const contPlanetas = document.getElementById('planetas');
 const planetaInfo = document.getElementById('planeta-info');
 let refPlaneta = null;
+let refFoco = null;
 
 function elegirPlaneta(nombre) {
   refPlaneta.set(nombre).catch(err => estado.textContent = '⚠ ' + err.message);
@@ -48,6 +49,16 @@ function crearSelector() {
   vg.className = 'planeta general'; vg.dataset.nombre = ''; vg.textContent = 'Vista general';
   vg.addEventListener('click', () => elegirPlaneta(null));
   contPlanetas.appendChild(vg);
+  const todos = document.createElement('button');
+  todos.className = 'planeta general';
+  todos.addEventListener('click', () =>
+    refFoco.set(null).catch(err => estado.textContent = '⚠ ' + err.message));
+  contPlanetas.appendChild(todos);
+  refFoco.on('value', s => {
+    const f = s.val();
+    todos.disabled = !f;
+    todos.textContent = f ? '✨ Quitar halo de ' + f + ' (saltan todos)' : '✨ Saltan todos los planetas';
+  });
   refPlaneta.on('value', s => marcarPlaneta(s.val()));
 }
 
@@ -171,6 +182,7 @@ if (!SALA) {
   ref.child('telefono').set(true);
   ref.child('telefono').onDisconnect().remove();
   refPlaneta = ref.child('planeta');
+  refFoco = ref.child('foco');
   crearSelector();
   firebase.database().ref('.info/connected').on('value', s =>
     estado.textContent = s.val() ? 'Conectado a la sala ' + SALA : 'Sin conexión…');

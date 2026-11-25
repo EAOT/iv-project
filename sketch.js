@@ -47,13 +47,25 @@ let ultimoPublicado; // último planeta enviado a Firebase (undefined = nada aú
 let planetaFoco = null; // último planeta abierto; recibe el halo en la vista general
 
 function cuerpoFoco() {
-  return sel || planetaFoco || CUERPOS.find(c => c.nombre === 'Tierra');
+  return sel || planetaFoco; // null = sin halo, saltan todos
 }
 
 function enAireTelefono() {
-  if (!saltoTelefono) return false;
-  const ph = faseSaltoTelefonoPara(cuerpoFoco());
+  const foco = cuerpoFoco();
+  if (!saltoTelefono || !foco) return false;
+  const ph = faseSaltoTelefonoPara(foco);
   return ph > 0 && ph < 1;
+}
+
+let refFoco = null;
+let ultimoFocoPublicado;
+
+function publicarFoco() {
+  if (!refFoco) return;
+  const actual = planetaFoco ? planetaFoco.nombre : null;
+  if (actual === ultimoFocoPublicado) return;
+  ultimoFocoPublicado = actual;
+  refFoco.set(actual);
 }
 
 let saltoTelefono = null; // { inicio: tiempo local en segundos, duracion: segundos, activo: boolean }
@@ -208,6 +220,7 @@ function ajustar() {
 
 function draw() {
   publicarPlaneta();
+  publicarFoco();
   background('#07090f'); 
   estrellas();
   
@@ -451,9 +464,10 @@ const solY = lerp(y0, cy, mVal);
     // Salto del astronauta
     const altMax = lerp(min(130, y0 - 90), 130, mVal);
     const alt = altMax * escalaLog(altura(c));
+    const focoActual = cuerpoFoco();
     const ph = telefonoConectado
-    ? faseSaltoTelefonoPara(c)
-    : ((millis() / 1000) / 2.2 + i * 0.17) % 1;
+      ? (focoActual && c !== focoActual ? 0 : faseSaltoTelefonoPara(c))
+      : ((millis() / 1000) / 2.2 + i * 0.17) % 1;
 
     const hSuelo = 4 * ph * (1 - ph) * alt;
 
@@ -933,7 +947,7 @@ if (d.fase === 'despegue') {
   faseSaltoDetalle = 0;
   detalleFaseAnt = 1;
 
-  const cuerpoSonido = cuerpoFoco();
+  const cuerpoSonido = cuerpoFoco() || CUERPOS.find(c => c.nombre === 'Tierra');
 
   if (sonidoOn && cuerpoSonido) {
     reproducir(cuerpoSonido);
@@ -970,7 +984,7 @@ else if (d.fase === 'cancelar') {
 
   });
 
-    refPlaneta = refSala.child('planeta');
+  refPlaneta = refSala.child('planeta');
   refPlaneta.on('value', s => {
     const nombre = s.val();
     if (modoDescubre) {                        // el tutorial manda: corrige al teléfono
@@ -981,6 +995,13 @@ else if (d.fase === 'cancelar') {
     if (nombre === null) { if (zObj === 1) cerrarPlaneta(); return; }
     const c = CUERPOS.find(c => c.nombre === nombre);
     if (c && !(sel === c && zObj === 1)) abrirPlaneta(c);
+  });
+
+  refFoco = refSala.child('foco');
+  refFoco.on('value', s => {
+    const nombre = s.val();
+    ultimoFocoPublicado = nombre;              // evita reenviar lo que acaba de llegar
+    planetaFoco = nombre ? CUERPOS.find(c => c.nombre === nombre) || null : null;
   });
 }
 
@@ -994,6 +1015,10 @@ function mousePressed() {
   const i = cuerpoEn(mouseX, mouseY, pos);
   if (i < 0) return;
   abrirPlaneta(CUERPOS[i]);
+}
+
+function keyPressed() {
+  if (key === 'h' || key === 'H') planetaFoco = null; // quita el halo; publicarFoco() avisa al teléfono
 }
 
 function iniciarUI() {
