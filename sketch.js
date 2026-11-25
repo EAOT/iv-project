@@ -44,7 +44,17 @@ let eventosListos = false;
 let refPlaneta = null;
 let ultimoPublicado; // último planeta enviado a Firebase (undefined = nada aún)
 
+let planetaFoco = null; // último planeta abierto; recibe el halo en la vista general
 
+function cuerpoFoco() {
+  return sel || planetaFoco || CUERPOS.find(c => c.nombre === 'Tierra');
+}
+
+function enAireTelefono() {
+  if (!saltoTelefono) return false;
+  const ph = faseSaltoTelefonoPara(cuerpoFoco());
+  return ph > 0 && ph < 1;
+}
 
 let saltoTelefono = null; // { inicio: tiempo local en segundos, duracion: segundos, activo: boolean }
 // { inicio, v0, activo }
@@ -401,6 +411,23 @@ const solY = lerp(y0, cy, mVal);
       strokeWeight(1);
     }
 
+    // Halo del planeta vinculado al teléfono
+    if (telefonoConectado && c === cuerpoFoco()) {
+      const pulso = 0.5 + 0.5 * sin(millis() / 300);
+      const intensidad = enAireTelefono() ? 1 : 0.45;
+      const col = color(c.col);
+      noStroke();
+      col.setAlpha(70 * intensidad * (0.6 + 0.4 * pulso));
+      fill(col);
+      circle(x, y, 2 * r + 18 + 10 * pulso);
+      noFill();
+      col.setAlpha(220 * intensidad);
+      stroke(col);
+      strokeWeight(2);
+      circle(x, y, 2 * r + 8 + 6 * pulso);
+      noStroke();
+    }
+
     // Planeta
     if (sobre) {
       noFill();
@@ -460,6 +487,11 @@ const solY = lerp(y0, cy, mVal);
       ph > 0.05 && ph < 0.95,
       c.col
     );
+
+    if (telefonoConectado && c === cuerpoFoco()) {
+      noStroke(); fill(255); textAlign(CENTER); textSize(14);
+      text('📱', x, y - r - hSuelo + 10 - 72 * escalaAstronauta);
+    }
 
     // Etiquetas
     if (z < 0.5) {
@@ -700,6 +732,10 @@ function dibujarDetalle() {
 
   astronauta(cx, suelo - y, ESCALA_ASTRONAUTA_VISTA_PARTICULAR, ph < 1 && ph > 0.03, c.col);
   
+  if (telefonoConectado) {
+    noStroke(); fill(255); textAlign(CENTER); textSize(22);
+    text('📱', cx, suelo - y - 75 * ESCALA_ASTRONAUTA_VISTA_PARTICULAR);
+  }
 
 
   const px = width < 640 ? 16 : width * 0.55, py = 25;
@@ -809,6 +845,7 @@ function aplicarV0(valor, reiniciar = true) {
 
 function abrirPlaneta(c) {
   sel = c;
+  planetaFoco = c;
   zObj = 1;
   detalleFaseAnt = 1;
   faseSaltoDetalle = 0;
@@ -896,10 +933,7 @@ if (d.fase === 'despegue') {
   faseSaltoDetalle = 0;
   detalleFaseAnt = 1;
 
-  // El sonido usa la misma velocidad y duración que la animación.
-  // Si no hay planeta seleccionado, utiliza la Tierra como referencia.
-  const cuerpoSonido = sel ||
-    CUERPOS.find(c => c.nombre === 'Tierra');
+  const cuerpoSonido = cuerpoFoco();
 
   if (sonidoOn && cuerpoSonido) {
     reproducir(cuerpoSonido);
